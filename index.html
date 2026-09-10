@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fund Holdings Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#0f1419; --panel:#1a2029; --panel2:#232b36; --line:#2e3946;
@@ -11,7 +14,8 @@
     --good:#3fb950;
   }
   *{box-sizing:border-box}
-  body{margin:0;font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  body{margin:0;font:14px/1.5 'Prompt',-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  input,select,button,textarea{font-family:inherit}
   header{padding:18px 22px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
   header h1{font-size:18px;margin:0}
   header .sub{color:var(--muted);font-size:12px}
@@ -85,7 +89,7 @@
         </div>
       </div>
       <table>
-        <thead><tr><th>#</th><th>Ticker</th><th>Company Name</th><th class="num">Percentage</th><th class="num">Real Percentage</th><th>As of</th></tr></thead>
+        <thead><tr><th>#</th><th>Ticker</th><th>Company Name</th><th class="num">Percentage (%)</th><th>As of</th></tr></thead>
         <tbody id="holdRows"></tbody>
       </table>
     </div>
@@ -108,7 +112,7 @@
     </div>
     <div class="count" id="coCount"></div>
     <table>
-      <thead><tr><th>Fund Name</th><th>Matched Ticker</th><th>Matched Company</th><th class="num">Percentage</th><th class="num">Real %</th><th>As of</th></tr></thead>
+      <thead><tr><th>Fund Name</th><th>Matched Ticker</th><th>Matched Company</th><th class="num">Percentage (%)</th><th>As of</th></tr></thead>
       <tbody id="coRows"></tbody>
     </table>
   </section>
@@ -119,8 +123,14 @@
 const FUNDS = window.FUND_DATA || [];
 const $ = s => document.querySelector(s);
 const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const pct = n => (n==null||n==='')?'':Number(n).toFixed(4);
-const rpct = n => (n==null||n==='')?'':(Number(n)*100).toFixed(4)+'%';
+const rpct = n => (n==null||n==='')?'':(Number(n)*100).toFixed(4);
+// date -> dd/mm/yyyy (Gregorian)
+function fmtDate(s){
+  if(!s) return '';
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(!m) return s;
+  return m[3] + '/' + m[2] + '/' + m[1];
+}
 
 let totalHoldings = FUNDS.reduce((a,f)=>a+f.holdings.length,0);
 $('#stat').textContent = FUNDS.length + ' funds · ' + totalHoldings + ' holding rows';
@@ -150,7 +160,7 @@ function renderFunds(){
       <td class="muted">${esc(f.underlying)}</td>
       <td class="muted">${esc(f.classification)}</td>
       <td class="muted">${esc(f.type)}</td>
-      <td class="muted">${esc(f.dateAsOf)}</td>
+      <td class="muted">${fmtDate(f.dateAsOf)}</td>
       <td class="num">${f.holdings.length}</td>
     </tr>`).join('') || '<tr><td colspan="6" class="empty">No matches</td></tr>';
   document.querySelectorAll('#fundRows tr.clickable').forEach(tr=>{
@@ -171,7 +181,7 @@ function showDetail(id){
   $('#dIsin').textContent = f.isin || '—';
   $('#dClass').textContent = f.classification || '—';
   $('#dType').textContent = f.type || '—';
-  $('#dDate').textContent = f.dateAsOf || '—';
+  $('#dDate').textContent = fmtDate(f.dateAsOf) || '—';
   $('#dCount').textContent = f.holdings.length;
   const max = Math.max(...f.holdings.map(h=>Number(h.realPercentage)||0), 0.0001);
   $('#holdRows').innerHTML = f.holdings.map((h,i)=>`
@@ -179,9 +189,8 @@ function showDetail(id){
       <td class="muted">${i+1}</td>
       <td>${h.ticker?`<a class="tk" href="#" data-tk="${esc(h.ticker)}">${esc(h.ticker)}</a>`:''}</td>
       <td>${esc(h.company)}</td>
-      <td class="num">${pct(h.percentage)}</td>
       <td class="num">${rpct(h.realPercentage)}<span class="bar" style="width:${(Number(h.realPercentage)||0)/max*60}px"></span></td>
-      <td class="muted">${esc(f.dateAsOf)}</td>
+      <td class="muted">${fmtDate(f.dateAsOf)}</td>
     </tr>`).join('');
   document.querySelectorAll('#holdRows a[data-tk]').forEach(a=>a.onclick=e=>{
     e.preventDefault(); $('#coQ').value=a.dataset.tk; goTab('company'); renderCompany();
@@ -216,10 +225,9 @@ function renderCompany(){
       <td>${esc(r.fund.name)}</td>
       <td>${esc(r.h.ticker)}</td>
       <td class="muted">${esc(r.h.company)}</td>
-      <td class="num">${pct(r.h.percentage)}</td>
       <td class="num">${rpct(r.h.realPercentage)}</td>
-      <td class="muted">${esc(r.fund.dateAsOf)}</td>
-    </tr>`).join('') || `<tr><td colspan="6" class="empty">${q?'No matches':'Type a ticker or company name above'}</td></tr>`;
+      <td class="muted">${fmtDate(r.fund.dateAsOf)}</td>
+    </tr>`).join('') || `<tr><td colspan="5" class="empty">${q?'No matches':'Type a ticker or company name above'}</td></tr>`;
   document.querySelectorAll('#coRows tr.clickable').forEach(tr=>tr.onclick=()=>showDetail(+tr.dataset.id));
 }
 $('#coQ').oninput = renderCompany;
