@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fund Holdings Explorer</title>
+<style>
+  :root{
+    --bg:#0f1419; --panel:#1a2029; --panel2:#232b36; --line:#2e3946;
+    --text:#e6edf3; --muted:#9aa7b4; --accent:#3b9dff; --accent2:#1f6feb;
+    --good:#3fb950;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+  header{padding:18px 22px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0}
+  header .sub{color:var(--muted);font-size:12px}
+  .tabs{display:flex;gap:4px;padding:10px 22px 0;background:var(--panel);border-bottom:1px solid var(--line)}
+  .tab{padding:9px 16px;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;color:var(--muted);font-weight:600}
+  .tab.active{background:var(--bg);color:var(--text);border-color:var(--line)}
+  main{padding:22px;max-width:1100px;margin:0 auto}
+  .panel{display:none}
+  .panel.active{display:block}
+  input[type=text]{width:100%;padding:11px 13px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:15px}
+  input::placeholder{color:var(--muted)}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .row label{color:var(--muted);font-size:13px}
+  select{padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text)}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0;background:var(--bg)}
+  tbody tr:hover{background:var(--panel)}
+  .clickable{cursor:pointer}
+  .clickable:hover td:first-child{color:var(--accent)}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .pill{display:inline-block;padding:2px 8px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-size:11px;margin-left:6px}
+  .muted{color:var(--muted)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+  .card h2{margin:0 0 4px;font-size:17px}
+  .meta{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-top:6px}
+  .meta b{color:var(--text);font-weight:600}
+  .back{color:var(--accent);cursor:pointer;font-size:13px;display:inline-block;margin-bottom:12px}
+  .count{color:var(--muted);font-size:13px;margin:6px 0 2px}
+  .bar{height:6px;background:var(--accent);border-radius:4px;display:inline-block;vertical-align:middle;margin-left:8px}
+  .empty{color:var(--muted);padding:30px;text-align:center}
+  a.tk{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>Fund Holdings Explorer</h1>
+  <span class="sub" id="stat"></span>
+</header>
+<div class="tabs">
+  <div class="tab active" data-tab="funds">Search Funds</div>
+  <div class="tab" data-tab="detail">Fund Detail</div>
+  <div class="tab" data-tab="company">Search Ticker / Company</div>
+</div>
+<main>
+
+  <section class="panel active" id="panel-funds">
+    <div class="row">
+      <input type="text" id="fundQ" placeholder="Search by Fund Name, Underlying, ISIN, or Classification…" autocomplete="off">
+    </div>
+    <div class="count" id="fundCount"></div>
+    <table>
+      <thead><tr><th>Fund Name</th><th>Underlying</th><th>Classification</th><th>Type</th><th>As of</th><th class="num">Holdings</th></tr></thead>
+      <tbody id="fundRows"></tbody>
+    </table>
+  </section>
+
+  <section class="panel" id="panel-detail">
+    <div id="detailEmpty" class="empty">Select a fund from <b>Search Funds</b> to see its holdings.</div>
+    <div id="detailBody" style="display:none">
+      <span class="back" id="backToFunds">&larr; back to fund search</span>
+      <div class="card">
+        <h2 id="dName"></h2>
+        <div class="muted" id="dUnder"></div>
+        <div class="meta">
+          <span>ISIN: <b id="dIsin"></b></span>
+          <span>Classification: <b id="dClass"></b></span>
+          <span>Type: <b id="dType"></b></span>
+          <span>As of: <b id="dDate"></b></span>
+          <span>Holdings: <b id="dCount"></b></span>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Ticker</th><th>Company Name</th><th class="num">Percentage</th><th class="num">Real Percentage</th><th>As of</th></tr></thead>
+        <tbody id="holdRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-company">
+    <div class="row">
+      <input type="text" id="coQ" placeholder="Search by Ticker or Company Name…" autocomplete="off">
+    </div>
+    <div class="row">
+      <label>Show top</label>
+      <select id="coLimit">
+        <option>10</option><option>20</option><option selected>50</option><option>100</option><option value="0">All</option>
+      </select>
+      <label>funds, sorted by</label>
+      <select id="coSort">
+        <option value="real">Real Percentage (desc)</option>
+        <option value="name">Fund Name (A-Z)</option>
+      </select>
+    </div>
+    <div class="count" id="coCount"></div>
+    <table>
+      <thead><tr><th>Fund Name</th><th>Matched Ticker</th><th>Matched Company</th><th class="num">Percentage</th><th class="num">Real %</th><th>As of</th></tr></thead>
+      <tbody id="coRows"></tbody>
+    </table>
+  </section>
+
+</main>
+<script src="fund_data.js"></script>
+<script>
+const FUNDS = window.FUND_DATA || [];
+const $ = s => document.querySelector(s);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pct = n => (n==null||n==='')?'':Number(n).toFixed(4);
+const rpct = n => (n==null||n==='')?'':(Number(n)*100).toFixed(4)+'%';
+
+let totalHoldings = FUNDS.reduce((a,f)=>a+f.holdings.length,0);
+$('#stat').textContent = FUNDS.length + ' funds · ' + totalHoldings + ' holding rows';
+
+// tabs
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  $('#panel-'+t.dataset.tab).classList.add('active');
+});
+function goTab(name){ document.querySelector('.tab[data-tab="'+name+'"]').click(); }
+
+/* ---------- Fund search ---------- */
+function renderFunds(){
+  const q = $('#fundQ').value.trim().toLowerCase();
+  let list = FUNDS;
+  if(q){
+    list = FUNDS.filter(f =>
+      (f.name+' '+f.underlying+' '+f.isin+' '+f.classification+' '+f.type).toLowerCase().includes(q));
+  }
+  list = list.slice().sort((a,b)=>a.name.localeCompare(b.name));
+  $('#fundCount').textContent = list.length + ' fund' + (list.length===1?'':'s');
+  $('#fundRows').innerHTML = list.map(f=>`
+    <tr class="clickable" data-id="${f.id}">
+      <td>${esc(f.name)}</td>
+      <td class="muted">${esc(f.underlying)}</td>
+      <td class="muted">${esc(f.classification)}</td>
+      <td class="muted">${esc(f.type)}</td>
+      <td class="muted">${esc(f.dateAsOf)}</td>
+      <td class="num">${f.holdings.length}</td>
+    </tr>`).join('') || '<tr><td colspan="6" class="empty">No matches</td></tr>';
+  document.querySelectorAll('#fundRows tr.clickable').forEach(tr=>{
+    tr.onclick = ()=>showDetail(+tr.dataset.id);
+  });
+}
+$('#fundQ').oninput = renderFunds;
+
+/* ---------- Fund detail ---------- */
+function showDetail(id){
+  const f = FUNDS[id];
+  if(!f) return;
+  goTab('detail');
+  $('#detailEmpty').style.display='none';
+  $('#detailBody').style.display='block';
+  $('#dName').textContent = f.name;
+  $('#dUnder').textContent = f.underlying;
+  $('#dIsin').textContent = f.isin || '—';
+  $('#dClass').textContent = f.classification || '—';
+  $('#dType').textContent = f.type || '—';
+  $('#dDate').textContent = f.dateAsOf || '—';
+  $('#dCount').textContent = f.holdings.length;
+  const max = Math.max(...f.holdings.map(h=>Number(h.realPercentage)||0), 0.0001);
+  $('#holdRows').innerHTML = f.holdings.map((h,i)=>`
+    <tr>
+      <td class="muted">${i+1}</td>
+      <td>${h.ticker?`<a class="tk" href="#" data-tk="${esc(h.ticker)}">${esc(h.ticker)}</a>`:''}</td>
+      <td>${esc(h.company)}</td>
+      <td class="num">${pct(h.percentage)}</td>
+      <td class="num">${rpct(h.realPercentage)}<span class="bar" style="width:${(Number(h.realPercentage)||0)/max*60}px"></span></td>
+      <td class="muted">${esc(f.dateAsOf)}</td>
+    </tr>`).join('');
+  document.querySelectorAll('#holdRows a[data-tk]').forEach(a=>a.onclick=e=>{
+    e.preventDefault(); $('#coQ').value=a.dataset.tk; goTab('company'); renderCompany();
+  });
+}
+$('#backToFunds').onclick = ()=>goTab('funds');
+
+/* ---------- Ticker / Company search ---------- */
+function renderCompany(){
+  const q = $('#coQ').value.trim().toLowerCase();
+  const limit = +$('#coLimit').value;
+  const sort = $('#coSort').value;
+  const rows = [];
+  if(q){
+    FUNDS.forEach(f=>{
+      f.holdings.forEach(h=>{
+        if((h.ticker+' '+h.company).toLowerCase().includes(q)){
+          rows.push({fund:f, h});
+        }
+      });
+    });
+  }
+  rows.sort((a,b)=> sort==='name'
+    ? a.fund.name.localeCompare(b.fund.name)
+    : (Number(b.h.realPercentage)||0)-(Number(a.h.realPercentage)||0));
+  const shown = limit>0 ? rows.slice(0,limit) : rows;
+  $('#coCount').textContent = q
+    ? `${rows.length} matching holding row${rows.length===1?'':'s'} across ${new Set(rows.map(r=>r.fund.id)).size} fund(s)` + (limit>0&&rows.length>limit?` — showing top ${limit}`:'')
+    : '';
+  $('#coRows').innerHTML = shown.map(r=>`
+    <tr class="clickable" data-id="${r.fund.id}">
+      <td>${esc(r.fund.name)}</td>
+      <td>${esc(r.h.ticker)}</td>
+      <td class="muted">${esc(r.h.company)}</td>
+      <td class="num">${pct(r.h.percentage)}</td>
+      <td class="num">${rpct(r.h.realPercentage)}</td>
+      <td class="muted">${esc(r.fund.dateAsOf)}</td>
+    </tr>`).join('') || `<tr><td colspan="6" class="empty">${q?'No matches':'Type a ticker or company name above'}</td></tr>`;
+  document.querySelectorAll('#coRows tr.clickable').forEach(tr=>tr.onclick=()=>showDetail(+tr.dataset.id));
+}
+$('#coQ').oninput = renderCompany;
+$('#coLimit').onchange = renderCompany;
+$('#coSort').onchange = renderCompany;
+
+renderFunds();
+renderCompany();
+</script>
+</body>
+</html>
