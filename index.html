@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fund Holdings Explorer</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%94%8E%3C/text%3E%3C/svg%3E">
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,27 +12,26 @@
   :root{
     --bg:#0f1419; --panel:#1a2029; --panel2:#232b36; --line:#2e3946;
     --text:#e6edf3; --muted:#9aa7b4; --accent:#3b9dff; --accent2:#1f6feb;
-    --good:#3fb950;
   }
   *{box-sizing:border-box}
   body{margin:0;font:14px/1.5 'Prompt',-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
   input,select,button,textarea{font-family:inherit}
-  header{padding:18px 22px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+  header{padding:16px 20px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
   header h1{font-size:18px;margin:0}
   header .sub{color:var(--muted);font-size:12px}
-  .tabs{display:flex;gap:4px;padding:10px 22px 0;background:var(--panel);border-bottom:1px solid var(--line)}
-  .tab{padding:9px 16px;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;color:var(--muted);font-weight:600}
+  .tabs{display:flex;gap:4px;padding:8px 14px 0;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto}
+  .tab{padding:9px 14px;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;color:var(--muted);font-weight:600;white-space:nowrap}
   .tab.active{background:var(--bg);color:var(--text);border-color:var(--line)}
-  main{padding:22px;max-width:1150px;margin:0 auto}
+  main{padding:16px;max-width:1150px;margin:0 auto}
   .panel{display:none}
   .panel.active{display:block}
-  input[type=text]{flex:1;min-width:220px;padding:11px 13px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:15px}
+  input[type=text]{flex:1 1 220px;min-width:0;padding:11px 13px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:15px}
   input::placeholder{color:var(--muted)}
-  button.btn{padding:11px 16px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text);cursor:pointer;font-weight:600}
+  button.btn{padding:11px 15px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text);cursor:pointer;font-weight:600;white-space:nowrap}
   button.btn:hover{border-color:var(--accent);color:var(--accent)}
-  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
-  .searchbar{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0;margin-bottom:2px;border-bottom:1px solid var(--line)}
-  .searchbar.row{margin-bottom:2px}
+  button.btn.on{background:var(--accent);color:#0b1220;border-color:var(--accent)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .searchbar{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0;margin-bottom:2px;border-bottom:1px solid var(--line)}
   .row label{color:var(--muted);font-size:13px}
   select{padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text)}
   table{width:100%;border-collapse:collapse;margin-top:8px}
@@ -42,32 +40,52 @@
   tbody tr.main:hover{background:var(--panel)}
   .clickable{cursor:pointer}
   tr.main.open{background:var(--panel)}
-  tr.main.open td:first-child{color:var(--accent)}
+  tr.main.open .cell-title{color:var(--accent)}
   .caret{display:inline-block;width:14px;color:var(--muted)}
   tr.main.open .caret{color:var(--accent)}
   .num{text-align:right;font-variant-numeric:tabular-nums}
   .muted{color:var(--muted)}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
-  .card h2{margin:0 0 4px;font-size:17px}
-  .meta{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-top:6px}
-  .meta b{color:var(--text);font-weight:600}
-  .back{color:var(--accent);cursor:pointer;font-size:13px;display:inline-block;margin-bottom:12px}
   .count{color:var(--muted);font-size:13px;margin:6px 0 2px}
   .bar{height:6px;background:var(--accent);border-radius:4px;display:inline-block;vertical-align:middle;margin-left:8px}
-  .empty{color:var(--muted);padding:30px;text-align:center}
+  .empty{color:var(--muted);padding:26px;text-align:center}
   a.tk{color:var(--accent);text-decoration:none}
   .expand{background:var(--bg)}
   .expand > td{padding:0 11px 16px}
-  .sumbox{display:flex;gap:26px;flex-wrap:wrap;margin:12px 0 4px;padding:12px 14px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+  .sumbox{display:flex;gap:24px;flex-wrap:wrap;margin:12px 0 4px;padding:12px 14px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
   .sumbox div{font-size:13px;color:var(--muted)}
-  .sumbox b{display:block;font-size:18px;color:var(--text);font-weight:600}
+  .sumbox b{display:block;font-size:17px;color:var(--text);font-weight:600}
   .pill{display:inline-block;padding:1px 7px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-size:11px}
   .inner th{position:static}
+  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  /* ---------- mobile: turn table rows into cards ---------- */
+  @media (max-width:640px){
+    header{padding:12px 14px}
+    header h1{font-size:16px}
+    main{padding:12px}
+    thead{display:none}
+    table{margin-top:4px}
+    tbody tr.main{display:block;border:1px solid var(--line);border-radius:11px;margin-bottom:9px;padding:8px 12px;background:var(--panel)}
+    tbody tr.main td{display:flex;justify-content:space-between;gap:14px;border:none;padding:3px 0;text-align:right}
+    tbody tr.main td::before{content:attr(data-label);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;text-align:left;flex:0 0 auto}
+    tbody tr.main td.cell-title{display:block;text-align:left;font-weight:600;font-size:15px;margin-bottom:4px}
+    tbody tr.main td.cell-title::before{content:none}
+    tbody tr.main td:empty{display:none}
+    tr.expand{display:block}
+    tr.expand>td{display:block;padding:0 0 14px}
+    .inner{display:block}
+    .inner tbody,.inner tr,.inner td{display:block}
+    .inner tr{border:1px solid var(--line);border-radius:9px;margin:8px 0;padding:6px 10px;background:var(--panel)}
+    .inner td{display:flex;justify-content:space-between;gap:12px;border:none;padding:3px 0;text-align:right}
+    .inner td::before{content:attr(data-label);color:var(--muted);font-size:11px;text-transform:uppercase;text-align:left}
+    .bar{display:none}
+    .sumbox{flex-direction:column;gap:8px}
+  }
 </style>
 </head>
 <body>
 <header>
-  <h1>Fund Holdings Explorer</h1>
+  <h1>🔎 Fund Holdings Explorer</h1>
   <span class="sub" id="stat"></span>
 </header>
 <div class="tabs">
@@ -78,38 +96,43 @@
 
   <section class="panel active" id="panel-funds">
     <div class="row searchbar">
-      <input type="text" id="fundQ" placeholder="Search by Fund Name, Mnemonic, Underlying, ISIN, or Classification…" autocomplete="off">
+      <input type="text" id="fundQ" placeholder="Search Fund Name, Mnemonic, Underlying, ISIN, Classification…" autocomplete="off">
       <button class="btn" id="fundClear">Clear</button>
     </div>
     <div class="count" id="fundCount"></div>
-    <table>
-      <thead><tr><th>Fund Name</th><th>Mnemonic</th><th>Underlying</th><th>Classification</th><th>Type</th><th>As of</th><th class="num">Holdings</th></tr></thead>
-      <tbody id="fundRows"></tbody>
-    </table>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Fund Name</th><th>Mnemonic</th><th>Underlying</th><th>Classification</th><th>Type</th><th>As of</th><th class="num">Holdings</th></tr></thead>
+        <tbody id="fundRows"></tbody>
+      </table>
+    </div>
   </section>
 
   <section class="panel" id="panel-company">
     <div class="row searchbar">
       <input type="text" id="coQ" placeholder="Search by Ticker or Company Name…" autocomplete="off">
       <button class="btn" id="coClear">Clear</button>
-      <button class="btn" id="coReset">Reset filters</button>
     </div>
     <div class="row">
+      <button class="btn" id="mag7Btn" title="Apple, Nvidia, Amazon, Tesla, Microsoft, Meta, Alphabet (GOOG/GOOGL)">MAG7</button>
       <label>Show top</label>
       <select id="coLimit">
         <option>10</option><option>20</option><option>50</option><option>100</option><option value="0" selected>All</option>
       </select>
-      <label>funds, sorted by</label>
+      <label>sort</label>
       <select id="coSort">
         <option value="real">Percentage (desc)</option>
         <option value="name">Fund Name (A-Z)</option>
       </select>
+      <button class="btn" id="coReset">Reset filters</button>
     </div>
     <div class="count" id="coCount"></div>
-    <table>
-      <thead><tr><th>Fund Name</th><th>Mnemonic</th><th>Matched Ticker</th><th>Matched Company</th><th class="num">Percentage (%)</th><th>As of</th></tr></thead>
-      <tbody id="coRows"></tbody>
-    </table>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Fund Name</th><th>Mnemonic</th><th>Matched Ticker</th><th>Matched Company</th><th class="num">Percentage (%)</th><th>As of</th></tr></thead>
+        <tbody id="coRows"></tbody>
+      </table>
+    </div>
   </section>
 
 </main>
@@ -124,12 +147,20 @@ function fmtDate(s){
   const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
   if(!m) return s;
   let y = +m[1];
-  if(y >= 2500) y -= 543;   // guard: convert Buddhist-era year to Gregorian
+  if(y >= 2500) y -= 543;   // guard: Buddhist-era year -> Gregorian
   return m[3]+'/'+m[2]+'/'+y;
 }
 function topSum(holdings,n){
   return holdings.slice(0,n).reduce((a,h)=>a+(Number(h.realPercentage)||0),0)*100;
 }
+
+/* MAG7 = Magnificent Seven */
+const MAG7 = ['AAPL','NVDA','AMZN','TSLA','MSFT','META','GOOG','GOOGL'];
+function isMag7(ticker){
+  const root = String(ticker||'').toUpperCase().split(/[.\s]/)[0];
+  return MAG7.includes(root);
+}
+let mag7On = false;
 
 $('#stat').textContent = FUNDS.length + ' funds · ' +
   FUNDS.reduce((a,f)=>a+f.holdings.length,0) + ' holding rows';
@@ -148,11 +179,11 @@ function holdingsHTML(f){
   const t10 = topSum(f.holdings,10), t20 = topSum(f.holdings,20), tot = topSum(f.holdings,f.holdings.length);
   const rows = f.holdings.map((h,i)=>`
     <tr>
-      <td class="muted">${i+1}</td>
-      <td>${h.ticker?`<a class="tk" href="#" data-tk="${esc(h.ticker)}">${esc(h.ticker)}</a>`:''}</td>
-      <td>${esc(h.company)}</td>
-      <td class="num">${rpct(h.realPercentage)}<span class="bar" style="width:${(Number(h.realPercentage)||0)/max*60}px"></span></td>
-      <td class="muted">${fmtDate(f.dateAsOf)}</td>
+      <td data-label="#" class="muted">${i+1}</td>
+      <td data-label="Ticker">${h.ticker?`<a class="tk" href="#" data-tk="${esc(h.ticker)}">${esc(h.ticker)}</a>`:''}</td>
+      <td data-label="Company">${esc(h.company)}</td>
+      <td data-label="Percentage (%)" class="num">${rpct(h.realPercentage)}<span class="bar" style="width:${(Number(h.realPercentage)||0)/max*60}px"></span></td>
+      <td data-label="As of" class="muted">${fmtDate(f.dateAsOf)}</td>
     </tr>`).join('');
   return `
     <table class="inner">
@@ -167,7 +198,7 @@ function holdingsHTML(f){
 }
 function wireTickerLinks(scope){
   scope.querySelectorAll('a[data-tk]').forEach(a=>a.onclick=e=>{
-    e.preventDefault(); $('#coQ').value=a.dataset.tk; goTab('company'); renderCompany();
+    e.preventDefault(); mag7On=false; syncMag7Btn(); $('#coQ').value=a.dataset.tk; goTab('company'); renderCompany();
   });
 }
 
@@ -181,13 +212,13 @@ function renderFunds(){
   const tb = $('#fundRows');
   tb.innerHTML = list.map(f=>`
     <tr class="main clickable" data-id="${f.id}">
-      <td><span class="caret">&#9656;</span>${esc(f.name)}</td>
-      <td>${f.mnemonic?`<span class="pill">${esc(f.mnemonic)}</span>`:''}</td>
-      <td class="muted">${esc(f.underlying)}</td>
-      <td class="muted">${esc(f.classification)}</td>
-      <td class="muted">${esc(f.type)}</td>
-      <td class="muted">${fmtDate(f.dateAsOf)}</td>
-      <td class="num">${f.holdings.length}</td>
+      <td class="cell-title"><span class="caret">&#9656;</span>${esc(f.name)}</td>
+      <td data-label="Mnemonic">${f.mnemonic?`<span class="pill">${esc(f.mnemonic)}</span>`:''}</td>
+      <td data-label="Underlying" class="muted">${esc(f.underlying)}</td>
+      <td data-label="Classification" class="muted">${esc(f.classification)}</td>
+      <td data-label="Type" class="muted">${esc(f.type)}</td>
+      <td data-label="As of" class="muted">${fmtDate(f.dateAsOf)}</td>
+      <td data-label="Holdings" class="num">${f.holdings.length}</td>
     </tr>
     <tr class="expand" data-for="${f.id}" hidden><td colspan="7"></td></tr>`).join('')
     || '<tr><td colspan="7" class="empty">No matches</td></tr>';
@@ -220,39 +251,48 @@ function openFund(id){
 }
 
 /* ---------- Ticker / Company search ---------- */
+function syncMag7Btn(){ $('#mag7Btn').classList.toggle('on', mag7On); }
+
 function renderCompany(){
   const q = $('#coQ').value.trim().toLowerCase();
   const limit = +$('#coLimit').value;
   const sort = $('#coSort').value;
   const rows = [];
-  if(q) FUNDS.forEach(f=>f.holdings.forEach(h=>{
-    if((h.ticker+' '+h.company).toLowerCase().includes(q)) rows.push({fund:f,h});
-  }));
+  const active = q || mag7On;
+  if(active){
+    FUNDS.forEach(f=>f.holdings.forEach(h=>{
+      const textOk = !q || (h.ticker+' '+h.company).toLowerCase().includes(q);
+      const magOk  = !mag7On || isMag7(h.ticker);
+      if(textOk && magOk) rows.push({fund:f,h});
+    }));
+  }
   rows.sort((a,b)=> sort==='name'
     ? a.fund.name.localeCompare(b.fund.name)
     : (Number(b.h.realPercentage)||0)-(Number(a.h.realPercentage)||0));
   const shown = limit>0 ? rows.slice(0,limit) : rows;
-  $('#coCount').textContent = q
-    ? `${rows.length} matching holding row${rows.length===1?'':'s'} across ${new Set(rows.map(r=>r.fund.id)).size} fund(s)`
+  $('#coCount').textContent = active
+    ? (mag7On?'MAG7 · ':'') +
+      `${rows.length} matching holding row${rows.length===1?'':'s'} across ${new Set(rows.map(r=>r.fund.id)).size} fund(s)`
       + (limit>0 && rows.length>limit ? ` — showing top ${limit}` : '')
     : '';
   $('#coRows').innerHTML = shown.map(r=>`
     <tr class="main clickable" data-id="${r.fund.id}">
-      <td>${esc(r.fund.name)}</td>
-      <td>${r.fund.mnemonic?`<span class="pill">${esc(r.fund.mnemonic)}</span>`:''}</td>
-      <td>${esc(r.h.ticker)}</td>
-      <td class="muted">${esc(r.h.company)}</td>
-      <td class="num">${rpct(r.h.realPercentage)}</td>
-      <td class="muted">${fmtDate(r.fund.dateAsOf)}</td>
+      <td class="cell-title">${esc(r.fund.name)}</td>
+      <td data-label="Mnemonic">${r.fund.mnemonic?`<span class="pill">${esc(r.fund.mnemonic)}</span>`:''}</td>
+      <td data-label="Ticker">${esc(r.h.ticker)}</td>
+      <td data-label="Company" class="muted">${esc(r.h.company)}</td>
+      <td data-label="Percentage (%)" class="num">${rpct(r.h.realPercentage)}</td>
+      <td data-label="As of" class="muted">${fmtDate(r.fund.dateAsOf)}</td>
     </tr>`).join('')
-    || `<tr><td colspan="6" class="empty">${q?'No matches':'Type a ticker or company name above'}</td></tr>`;
+    || `<tr><td colspan="6" class="empty">${active?'No matches':'Type a ticker / company name above, or tap MAG7'}</td></tr>`;
   $('#coRows').querySelectorAll('tr.main').forEach(tr=>tr.onclick=()=>openFund(+tr.dataset.id));
 }
 $('#coQ').oninput = renderCompany;
 $('#coLimit').onchange = renderCompany;
 $('#coSort').onchange = renderCompany;
+$('#mag7Btn').onclick = ()=>{ mag7On=!mag7On; syncMag7Btn(); renderCompany(); };
 $('#coClear').onclick = ()=>{ $('#coQ').value=''; renderCompany(); $('#coQ').focus(); };
-$('#coReset').onclick = ()=>{ $('#coQ').value=''; $('#coLimit').value='0'; $('#coSort').value='real'; renderCompany(); };
+$('#coReset').onclick = ()=>{ $('#coQ').value=''; mag7On=false; syncMag7Btn(); $('#coLimit').value='0'; $('#coSort').value='real'; renderCompany(); };
 
 renderFunds();
 renderCompany();
