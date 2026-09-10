@@ -30,6 +30,8 @@
   button.btn{padding:11px 16px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text);cursor:pointer;font-weight:600}
   button.btn:hover{border-color:var(--accent);color:var(--accent)}
   .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .searchbar{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0;margin-bottom:2px;border-bottom:1px solid var(--line)}
+  .searchbar.row{margin-bottom:2px}
   .row label{color:var(--muted);font-size:13px}
   select{padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text)}
   table{width:100%;border-collapse:collapse;margin-top:8px}
@@ -68,13 +70,12 @@
 </header>
 <div class="tabs">
   <div class="tab active" data-tab="funds">Search Funds</div>
-  <div class="tab" data-tab="detail">Fund Detail</div>
   <div class="tab" data-tab="company">Search Ticker / Company</div>
 </div>
 <main>
 
   <section class="panel active" id="panel-funds">
-    <div class="row">
+    <div class="row searchbar">
       <input type="text" id="fundQ" placeholder="Search by Fund Name, Mnemonic, Underlying, ISIN, or Classification…" autocomplete="off">
       <button class="btn" id="fundClear">Clear</button>
     </div>
@@ -85,28 +86,8 @@
     </table>
   </section>
 
-  <section class="panel" id="panel-detail">
-    <div id="detailEmpty" class="empty">Pick a fund in <b>Search Funds</b> (rows expand in place), or click a ticker to land here.</div>
-    <div id="detailBody" style="display:none">
-      <span class="back" id="backToFunds">&larr; back to fund search</span>
-      <div class="card">
-        <h2 id="dName"></h2>
-        <div class="muted" id="dUnder"></div>
-        <div class="meta">
-          <span>Mnemonic: <b id="dMnem"></b></span>
-          <span>ISIN: <b id="dIsin"></b></span>
-          <span>Classification: <b id="dClass"></b></span>
-          <span>Type: <b id="dType"></b></span>
-          <span>As of: <b id="dDate"></b></span>
-          <span>Holdings: <b id="dCount"></b></span>
-        </div>
-      </div>
-      <div id="detailHold"></div>
-    </div>
-  </section>
-
   <section class="panel" id="panel-company">
-    <div class="row">
+    <div class="row searchbar">
       <input type="text" id="coQ" placeholder="Search by Ticker or Company Name…" autocomplete="off">
       <button class="btn" id="coClear">Clear</button>
       <button class="btn" id="coReset">Reset filters</button>
@@ -114,7 +95,7 @@
     <div class="row">
       <label>Show top</label>
       <select id="coLimit">
-        <option>10</option><option>20</option><option selected>50</option><option>100</option><option value="0">All</option>
+        <option>10</option><option>20</option><option>50</option><option>100</option><option value="0" selected>All</option>
       </select>
       <label>funds, sorted by</label>
       <select id="coSort">
@@ -223,24 +204,15 @@ function renderFunds(){
 $('#fundQ').oninput = renderFunds;
 $('#fundClear').onclick = ()=>{ $('#fundQ').value=''; renderFunds(); $('#fundQ').focus(); };
 
-/* ---------- Fund Detail tab (from ticker links) ---------- */
-function showDetail(id){
+/* ---------- open a fund expanded in the Search Funds tab ---------- */
+function openFund(id){
   const f = FUNDS[id]; if(!f) return;
-  goTab('detail');
-  $('#detailEmpty').style.display='none';
-  $('#detailBody').style.display='block';
-  $('#dName').textContent = f.name;
-  $('#dUnder').textContent = f.underlying;
-  $('#dMnem').textContent = f.mnemonic || '—';
-  $('#dIsin').textContent = f.isin || '—';
-  $('#dClass').textContent = f.classification || '—';
-  $('#dType').textContent = f.type || '—';
-  $('#dDate').textContent = fmtDate(f.dateAsOf) || '—';
-  $('#dCount').textContent = f.holdings.length;
-  $('#detailHold').innerHTML = holdingsHTML(f);
-  wireTickerLinks($('#detailHold'));
+  goTab('funds');
+  $('#fundQ').value = f.name;
+  renderFunds();
+  const tr = $('#fundRows').querySelector('tr.main[data-id="'+id+'"]');
+  if(tr){ tr.click(); tr.scrollIntoView({block:'start'}); }
 }
-$('#backToFunds').onclick = ()=>goTab('funds');
 
 /* ---------- Ticker / Company search ---------- */
 function renderCompany(){
@@ -269,13 +241,13 @@ function renderCompany(){
       <td class="muted">${fmtDate(r.fund.dateAsOf)}</td>
     </tr>`).join('')
     || `<tr><td colspan="6" class="empty">${q?'No matches':'Type a ticker or company name above'}</td></tr>`;
-  $('#coRows').querySelectorAll('tr.main').forEach(tr=>tr.onclick=()=>showDetail(+tr.dataset.id));
+  $('#coRows').querySelectorAll('tr.main').forEach(tr=>tr.onclick=()=>openFund(+tr.dataset.id));
 }
 $('#coQ').oninput = renderCompany;
 $('#coLimit').onchange = renderCompany;
 $('#coSort').onchange = renderCompany;
 $('#coClear').onclick = ()=>{ $('#coQ').value=''; renderCompany(); $('#coQ').focus(); };
-$('#coReset').onclick = ()=>{ $('#coQ').value=''; $('#coLimit').value='50'; $('#coSort').value='real'; renderCompany(); };
+$('#coReset').onclick = ()=>{ $('#coQ').value=''; $('#coLimit').value='0'; $('#coSort').value='real'; renderCompany(); };
 
 renderFunds();
 renderCompany();
