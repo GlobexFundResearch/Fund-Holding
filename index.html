@@ -1,301 +1,864 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fund Holdings Explorer</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%94%8E%3C/text%3E%3C/svg%3E">
+<script>
+// apply the saved light/dark choice before first paint
+try { const th = localStorage.getItem('fhTheme'); if (th === 'dark' || th === 'light') document.documentElement.dataset.theme = th; } catch (e) {}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --bg:#0f1419; --panel:#1a2029; --panel2:#232b36; --line:#2e3946;
-    --text:#e6edf3; --muted:#9aa7b4; --accent:#3b9dff; --accent2:#1f6feb;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;font:14px/1.5 'Prompt',-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
-  input,select,button,textarea{font-family:inherit}
-  header{padding:16px 20px;border-bottom:1px solid var(--line);background:var(--panel);display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-  header h1{font-size:18px;margin:0}
-  header .sub{color:var(--muted);font-size:12px}
-  .tabs{display:flex;gap:4px;padding:8px 14px 0;background:var(--panel);border-bottom:1px solid var(--line);overflow-x:auto}
-  .tab{padding:9px 14px;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;cursor:pointer;color:var(--muted);font-weight:600;white-space:nowrap}
-  .tab.active{background:var(--bg);color:var(--text);border-color:var(--line)}
-  main{padding:16px;max-width:1150px;margin:0 auto}
-  .panel{display:none}
-  .panel.active{display:block}
-  input[type=text]{flex:1 1 220px;min-width:0;padding:11px 13px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text);font-size:15px}
-  input::placeholder{color:var(--muted)}
-  button.btn{padding:11px 15px;border-radius:9px;border:1px solid var(--line);background:var(--panel2);color:var(--text);cursor:pointer;font-weight:600;white-space:nowrap}
-  button.btn:hover{border-color:var(--accent);color:var(--accent)}
-  button.btn.on{background:var(--accent);color:#0b1220;border-color:var(--accent)}
-  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-  .searchbar{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0;margin-bottom:2px;border-bottom:1px solid var(--line)}
-  .row label{color:var(--muted);font-size:13px}
-  select{padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--panel2);color:var(--text)}
-  table{width:100%;border-collapse:collapse;margin-top:8px}
-  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
-  th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-  tbody tr.main:hover{background:var(--panel)}
-  .clickable{cursor:pointer}
-  tr.main.open{background:var(--panel)}
-  tr.main.open .cell-title{color:var(--accent)}
-  .caret{display:inline-block;width:14px;color:var(--muted)}
-  tr.main.open .caret{color:var(--accent)}
-  .num{text-align:right;font-variant-numeric:tabular-nums}
-  .muted{color:var(--muted)}
-  .count{color:var(--muted);font-size:13px;margin:6px 0 2px}
-  .bar{height:6px;background:var(--accent);border-radius:4px;display:inline-block;vertical-align:middle;margin-left:8px}
-  .empty{color:var(--muted);padding:26px;text-align:center}
-  a.tk{color:var(--accent);text-decoration:none}
-  .expand{background:var(--bg)}
-  .expand > td{padding:0 11px 16px}
-  .sumbox{display:flex;gap:24px;flex-wrap:wrap;margin:12px 0 4px;padding:12px 14px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
-  .sumbox div{font-size:13px;color:var(--muted)}
-  .sumbox b{display:block;font-size:17px;color:var(--text);font-weight:600}
-  .pill{display:inline-block;padding:1px 7px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);color:var(--muted);font-size:11px}
-  .inner th{position:static}
-  .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* ---------- mobile: turn table rows into cards ---------- */
-  @media (max-width:640px){
-    header{padding:12px 14px}
-    header h1{font-size:16px}
-    main{padding:12px}
-    thead{display:none}
-    table{margin-top:4px}
-    tbody tr.main{display:block;border:1px solid var(--line);border-radius:11px;margin-bottom:9px;padding:8px 12px;background:var(--panel)}
-    tbody tr.main td{display:flex;justify-content:space-between;gap:14px;border:none;padding:3px 0;text-align:right}
-    tbody tr.main td::before{content:attr(data-label);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;text-align:left;flex:0 0 auto}
-    tbody tr.main td.cell-title{display:block;text-align:left;font-weight:600;font-size:15px;margin-bottom:4px}
-    tbody tr.main td.cell-title::before{content:none}
-    tbody tr.main td:empty{display:none}
-    tr.expand{display:block}
-    tr.expand>td{display:block;padding:0 0 14px}
-    .inner{display:block}
-    .inner tbody,.inner tr,.inner td{display:block}
-    .inner tr{border:1px solid var(--line);border-radius:9px;margin:8px 0;padding:6px 10px;background:var(--panel)}
-    .inner td{display:flex;justify-content:space-between;gap:12px;border:none;padding:3px 0;text-align:right}
-    .inner td::before{content:attr(data-label);color:var(--muted);font-size:11px;text-transform:uppercase;text-align:left}
-    .bar{display:none}
-    .sumbox{flex-direction:column;gap:8px}
+/* ── Tokens (light) ── */
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --surface-2: #f1f3f6; --hover: #f4f7fc;
+  --border: #e4e7ec; --border-strong: #cfd5de;
+  --text: #0f1729; --text-2: #475467; --muted: #8a94a6;
+  --accent: #1f5fd1; --accent-bg: #eaf1fd; --accent-fg: #1a4fae; --on-accent: #ffffff;
+  --bar: #1f5fd1; --bar-2: #8fb0ea;
+  --warn: #b54708; --warn-bg: #fef4e6;
+  --etf: #6941c6; --etf-bg: #f4f0fd;
+  --shadow-pop: 0 12px 32px rgba(16,24,40,.12), 0 2px 6px rgba(16,24,40,.06);
+  --header-h: 56px; --tabbar-h: 44px; --sticky-offset: 154px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0f17; --surface: #121823; --surface-2: #19202d; --hover: #182132;
+    --border: #232b39; --border-strong: #354055;
+    --text: #e8ecf3; --text-2: #b3bccb; --muted: #7c8799;
+    --accent: #4f83ea; --accent-bg: #172440; --accent-fg: #9cc0ff;
+    --bar: #4f83ea; --bar-2: #2c4a85;
+    --warn: #f5a524; --warn-bg: #2b2111;
+    --etf: #b9a3f5; --etf-bg: #241c3d;
+    --shadow-pop: 0 12px 32px rgba(0,0,0,.55);
+    color-scheme: dark;
   }
+}
+:root[data-theme="dark"] {
+  --bg: #0b0f17; --surface: #121823; --surface-2: #19202d; --hover: #182132;
+  --border: #232b39; --border-strong: #354055;
+  --text: #e8ecf3; --text-2: #b3bccb; --muted: #7c8799;
+  --accent: #4f83ea; --accent-bg: #172440; --accent-fg: #9cc0ff;
+  --bar: #4f83ea; --bar-2: #2c4a85;
+  --warn: #f5a524; --warn-bg: #2b2111;
+  --etf: #b9a3f5; --etf-bg: #241c3d;
+  --shadow-pop: 0 12px 32px rgba(0,0,0,.55);
+  color-scheme: dark;
+}
+
+body {
+  font-family: 'Prompt', 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text);
+  font-size: 14px; line-height: 1.45; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased;
+}
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ico { width: 16px; height: 16px; flex-shrink: 0; vertical-align: -3px; }
+.tnum { font-variant-numeric: tabular-nums; }
+[hidden] { display: none !important; }
+
+/* ── Header ── */
+header {
+  position: sticky; top: 0; z-index: 200; height: var(--header-h);
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 20px;
+}
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-mark { width: 30px; height: 30px; border-radius: 8px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; flex-shrink: 0; }
+.brand-mark .ico { width: 17px; height: 17px; }
+.h-toprow { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.h-title { font-size: 15px; font-weight: 600; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.h-tag { font-size: 10.5px; font-weight: 500; color: var(--warn); background: var(--warn-bg); padding: 1px 7px; border-radius: 4px; white-space: nowrap; }
+.h-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.h-right { font-size: 11px; color: var(--muted); text-align: right; line-height: 1.55; white-space: nowrap; }
+.h-right b { color: var(--text); font-weight: 500; }
+
+/* ── Tabs ── */
+.tabbar {
+  position: sticky; top: var(--header-h); z-index: 195; height: var(--tabbar-h);
+  display: flex; align-items: stretch; gap: 4px; padding: 0 20px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.tab-btn {
+  display: inline-flex; align-items: center; gap: 7px; border: none; background: none;
+  font-size: 13px; font-weight: 500; color: var(--muted); padding: 0 10px; cursor: pointer;
+  border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap;
+  transition: color .15s ease, border-color .15s ease;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--accent); }
+.tab-tools { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.icon-btn {
+  width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-2); cursor: pointer;
+}
+.icon-btn:hover { background: var(--hover); border-color: var(--border-strong); }
+.theme-dark-ico { display: none; }
+:root[data-theme="dark"] .theme-dark-ico { display: block; }
+:root[data-theme="dark"] .theme-light-ico { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-dark-ico { display: block; }
+  :root:not([data-theme="light"]) .theme-light-ico { display: none; }
+}
+
+/* ── Filter bar ── */
+.filterbar {
+  position: sticky; top: calc(var(--header-h) + var(--tabbar-h)); z-index: 190;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+}
+.filterbar-inner { display: flex; align-items: center; gap: 8px; padding: 10px 20px; flex-wrap: wrap; }
+.fb-more { display: contents; }
+
+.search-wrap { position: relative; flex: 1; min-width: 200px; max-width: 420px; }
+.search-wrap input {
+  width: 100%; height: 34px; padding: 0 34px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); font-size: 13px; outline: none; transition: border-color .15s ease, box-shadow .15s ease;
+}
+.search-wrap input::placeholder { color: var(--muted); }
+.search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+.search-wrap input::-webkit-search-cancel-button { display: none; }
+.search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; display: flex; }
+.search-x {
+  position: absolute; right: 5px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px;
+  display: grid; place-items: center; border: none; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer;
+}
+.search-x:hover { background: var(--surface-2); color: var(--text); }
+.search-x .ico { width: 14px; height: 14px; }
+.kbd {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--muted); line-height: 1;
+  border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 2px 6px; pointer-events: none;
+}
+
+.seg { display: flex; padding: 2px; gap: 2px; background: var(--surface-2); border-radius: 8px; flex-shrink: 0; }
+.seg button {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 6px; border: none; background: transparent;
+  font-size: 12.5px; font-weight: 500; color: var(--text-2); cursor: pointer; white-space: nowrap;
+}
+.seg button:hover { color: var(--text); }
+.seg button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(16,24,40,.1); }
+.seg .n { font-size: 11px; color: var(--muted); font-weight: 400; }
+
+.sel {
+  height: 34px; padding: 0 28px 0 11px; border: 1px solid var(--border); border-radius: 8px; font-size: 12.5px; outline: none; cursor: pointer;
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a94a6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+  -webkit-appearance: none; appearance: none; max-width: 240px; flex-shrink: 0; text-overflow: ellipsis;
+}
+.sel:hover { border-color: var(--border-strong); }
+.sel:focus { border-color: var(--accent); }
+.sel.set { color: var(--accent-fg); background-color: var(--accent-bg); border-color: transparent; font-weight: 500; }
+.sel.sm { height: 28px; font-size: 12px; max-width: 190px; }
+
+.chip-btn, .ghost-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface); font-size: 12.5px; font-weight: 500; color: var(--text-2);
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+}
+.chip-btn:hover, .ghost-btn:hover { background: var(--hover); border-color: var(--border-strong); color: var(--text); }
+.chip-btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.chip-btn .ico, .ghost-btn .ico { width: 14px; height: 14px; }
+.count-pill { margin-left: auto; font-size: 12px; color: var(--muted); white-space: nowrap; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+
+/* ── Funds tab: list + detail ── */
+.split { display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); gap: 14px; margin: 14px 20px 60px; align-items: start; }
+.fl { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; min-width: 0; }
+.fl-bar {
+  position: sticky; top: var(--sticky-offset); z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 12px; background: var(--surface); border-radius: 12px 12px 0 0; border-bottom: 1px solid var(--border);
+}
+.fl-title { font-size: 12px; font-weight: 600; color: var(--text-2); }
+.fl-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  padding: 9px 12px 9px 9px; border-top: 1px solid var(--border); border-left: 3px solid transparent; cursor: pointer;
+  scroll-margin-top: calc(var(--sticky-offset) + 50px); scroll-margin-bottom: 20px;
+}
+.fl-row:first-child { border-top: none; }
+.fl-row:hover { background: var(--hover); }
+.fl-row.on { background: var(--accent-bg); border-left-color: var(--accent); }
+.fl-main { min-width: 0; }
+.fl-code { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.fl-code .c { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fl-name { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.fl-right { text-align: right; }
+.fl-type { font-size: 11px; color: var(--text-2); }
+.fl-type.etf { color: var(--etf); }
+.fl-val { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fl-date { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mn { font-size: 10.5px; font-weight: 500; color: var(--etf); background: var(--etf-bg); border-radius: 4px; padding: 0 6px; white-space: nowrap; flex-shrink: 0; }
+.state-msg { text-align: center; padding: 48px 20px; color: var(--muted); font-size: 13px; }
+
+/* Detail panel */
+.fd {
+  position: sticky; top: calc(var(--sticky-offset) + 14px); max-height: calc(100vh - var(--sticky-offset) - 28px); overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; min-width: 0; scrollbar-width: thin;
+}
+.fd-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 70px 20px; }
+.fd-empty .ico { width: 28px; height: 28px; display: block; margin: 0 auto 10px; }
+.fd-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.fd-code { font-size: 21px; font-weight: 600; line-height: 1.25; word-break: break-word; }
+.fd-name { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+.fd-close { display: none; }
+.fd-tags { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 12px 0 0; }
+.tag { font-size: 11.5px; color: var(--text-2); background: var(--surface-2); border-radius: 4px; padding: 1px 8px; }
+.tag b { font-weight: 600; color: var(--text); }
+.tag.etf { color: var(--etf); background: var(--etf-bg); font-weight: 500; }
+.fd-asof { font-size: 12px; color: var(--muted); margin-top: 8px; }
+.fd-asof b { color: var(--text-2); font-weight: 500; }
+
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 16px 0 18px; }
+.kpi { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+.kpi-l { font-size: 11px; color: var(--muted); }
+.kpi-v { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi-v.txt { font-size: 14px; margin-top: 4px; }
+.kpi-s { font-size: 11.5px; color: var(--text-2); font-variant-numeric: tabular-nums; }
+
+.fd-seg { margin-bottom: 10px; display: inline-flex; }
+.sec-note { font-size: 11.5px; color: var(--muted); margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.sec-note b { color: var(--text-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+.none { font-size: 12.5px; color: var(--muted); padding: 22px 0; text-align: center; }
+
+/* holdings rows */
+.hrow { display: grid; grid-template-columns: 24px minmax(0, 1fr) 70px; gap: 10px; align-items: start; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.hrow:last-of-type { border-bottom: none; }
+.h-rank { font-size: 11.5px; color: var(--muted); padding-top: 1px; font-variant-numeric: tabular-nums; }
+.h-co { font-size: 13px; font-weight: 500; word-break: break-word; }
+.h-sub { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.tk {
+  border: none; background: none; padding: 0; font-size: 11.5px; color: var(--accent-fg); cursor: pointer; font-variant-numeric: tabular-nums;
+}
+.tk:hover { text-decoration: underline; }
+.no-tk { font-size: 11.5px; color: var(--muted); }
+.h-trk { flex: 1; height: 4px; background: var(--surface-2); border-radius: 2px; overflow: hidden; max-width: 260px; }
+.h-trk i { display: block; height: 100%; background: var(--bar); border-radius: 2px; }
+.h-val { text-align: right; font-weight: 600; font-size: 13px; font-variant-numeric: tabular-nums; }
+
+/* allocation rows (country / sector) */
+.arow { display: grid; grid-template-columns: minmax(110px, 38%) minmax(0, 1fr) 66px; gap: 12px; align-items: center; padding: 6px 0; font-size: 12.5px; }
+.a-lbl { color: var(--text); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.a-trk { height: 10px; background: var(--surface-2); border-radius: 5px; overflow: hidden; }
+.a-trk i { display: block; height: 100%; background: var(--bar); border-radius: 5px; }
+.arow:nth-child(n+4) .a-trk i { background: var(--bar-2); }
+.a-val { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.fd-backdrop { display: none; }
+
+/* ── Lookup tab ── */
+.lk { margin: 14px 20px 60px; }
+.lk-sum { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+.lk-h { font-size: 12.5px; font-weight: 600; color: var(--text-2); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.lk-h .hint { font-weight: 400; color: var(--muted); font-size: 11.5px; }
+.co-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.co-chip {
+  display: inline-flex; align-items: center; gap: 7px; max-width: 100%; padding: 5px 10px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface); font-size: 12px; cursor: pointer; text-align: left;
+}
+.co-chip:hover { border-color: var(--accent); background: var(--accent-bg); }
+.co-chip b { font-weight: 600; white-space: nowrap; }
+.co-chip .co { color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+.co-chip .n { color: var(--muted); font-size: 11px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.one { display: flex; flex-wrap: wrap; gap: 8px 28px; align-items: flex-end; }
+.one-name { font-size: 16px; font-weight: 600; }
+.one-tk { font-size: 12px; color: var(--muted); }
+.one-stat { font-size: 11px; color: var(--muted); }
+.one-stat b { display: block; font-size: 17px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.lk-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.lk-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
+.lk-table th {
+  position: sticky; top: var(--sticky-offset); z-index: 4; background: var(--surface);
+  padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 500; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+.lk-table th:first-child { border-top-left-radius: 12px; } .lk-table th:last-child { border-top-right-radius: 12px; }
+.lk-table th.num, .lk-table td.num { text-align: right; }
+.lk-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; overflow: hidden; }
+.lk-table tbody tr { cursor: pointer; }
+.lk-table tbody tr:hover { background: var(--hover); }
+.lk-table tbody tr:last-child td { border-bottom: none; }
+.c-fund { width: 34%; } .c-tk { width: 13%; } .c-co { width: 31%; } .c-pct { width: 11%; } .c-date { width: 11%; }
+.f-code { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.f-code .c { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.f-sub { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+.td-tk { font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.td-co { font-size: 12.5px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.td-pct { font-weight: 600; font-variant-numeric: tabular-nums; }
+.td-date { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.more-wrap { text-align: center; padding: 12px; border-top: 1px solid var(--border); }
+
+/* ── Phones ── */
+@media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) {
+  :root { --header-h: 50px; }
+  header { position: static; padding: 0 14px; }
+  .h-sub, .h-right .h-extra { display: none; }
+  .h-title { font-size: 14px; }
+  .brand-mark { width: 26px; height: 26px; }
+  .tabbar { top: 0; padding: 0 8px; gap: 0; }
+  .tab-btn { padding: 0 8px; font-size: 12.5px; }
+  .filterbar { top: var(--tabbar-h); }
+  .filterbar-inner { padding: 10px 12px; }
+  .search-wrap { flex: 1 1 100%; max-width: none; min-width: 0; }
+  .kbd { display: none; }
+  .fb-more { display: flex; gap: 8px; align-items: center; width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .fb-more::-webkit-scrollbar { display: none; }
+  .split { display: block; margin: 12px 12px 60px; }
+  .fd {
+    position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 600; max-height: 88vh;
+    border-radius: 18px 18px 0 0; padding: 8px 16px calc(24px + env(safe-area-inset-bottom));
+    transform: translateY(105%); transition: transform .25s ease; box-shadow: var(--shadow-pop);
+  }
+  .fd::before { content: ''; display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--border-strong); margin: 0 auto 10px; }
+  body.fd-open .fd { transform: translateY(0); }
+  body.fd-open { overflow: hidden; }
+  .fd-backdrop { display: block; position: fixed; inset: 0; z-index: 590; background: rgba(11,15,23,.45); opacity: 0; pointer-events: none; transition: opacity .2s ease; }
+  body.fd-open .fd-backdrop { opacity: 1; pointer-events: auto; }
+  .fd-close { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-2); cursor: pointer; }
+  .fd-code { font-size: 18px; }
+  .fd-empty { display: none; }
+  .arow { grid-template-columns: minmax(90px, 40%) minmax(0, 1fr) 60px; gap: 8px; }
+
+  .lk { margin: 12px 12px 60px; }
+  .lk-card { background: none; border: none; }
+  .lk-table, .lk-table tbody, .lk-table tr, .lk-table td { display: block; width: auto; }
+  .lk-table thead { display: none; }
+  .lk-table tbody tr { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+  .lk-table td { display: flex; justify-content: space-between; gap: 12px; padding: 2px 0; border: none; text-align: right; }
+  .lk-table td::before { content: attr(data-label); color: var(--muted); font-size: 11px; text-align: left; flex-shrink: 0; }
+  .lk-table td.c-fund { display: block; text-align: left; padding-bottom: 6px; }
+  .lk-table td.c-fund::before { content: none; }
+  .td-co { white-space: normal; }
+  .more-wrap { border: none; }
+
+  /* phones zoom into inputs under 16px */
+  input, select, .search-wrap input, .sel { font-size: 16px !important; }
+  .sel.sm { font-size: 14px !important; }
+}
+@media (max-width: 420px) { .h-tag { display: none; } }
 </style>
 </head>
 <body>
+
 <header>
-  <h1>🔎 Fund Holdings Explorer</h1>
-  <span class="sub" id="stat"></span>
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></div>
+    <div style="min-width:0">
+      <div class="h-toprow">
+        <span class="h-title">Fund Holdings Explorer</span>
+        <span class="h-tag">Internal use only</span>
+      </div>
+      <div class="h-sub">ที่มา: LSEG Refinitiv · Top 20 holdings, สัดส่วนประเทศ และอุตสาหกรรม</div>
+    </div>
+  </div>
+  <div class="h-right">
+    <div><b id="h-funds">—</b> กองทุน</div>
+    <div class="h-extra">ข้อมูลล่าสุด <span id="h-date">—</span></div>
+  </div>
 </header>
-<div class="tabs">
-  <div class="tab active" data-tab="funds">Search Funds</div>
-  <div class="tab" data-tab="company">Search Ticker / Company</div>
+
+<nav class="tabbar" role="tablist">
+  <button class="tab-btn active" role="tab" data-tab="funds"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>กองทุน</button>
+  <button class="tab-btn" role="tab" data-tab="lookup"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V10l7-5 7 5v11"/><path d="M10 21v-6h4v6"/></svg>ค้นหาหุ้น / บริษัท</button>
+  <div class="tab-tools">
+    <button type="button" class="icon-btn" id="theme-btn" aria-label="สลับโหมดสว่าง / มืด" title="สว่าง / มืด">
+      <svg class="ico theme-light-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="ico theme-dark-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </div>
+</nav>
+
+<!-- ═════════ Tab: funds ═════════ -->
+<div id="tab-funds">
+  <div class="filterbar">
+    <div class="filterbar-inner">
+      <div class="search-wrap">
+        <span class="search-icon"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
+        <input type="search" id="f-q" placeholder="ค้นหาชื่อกองทุน, Mnemonic, ISIN, Underlying…" autocomplete="off">
+        <kbd class="kbd" id="f-kbd">/</kbd>
+        <button type="button" class="search-x" id="f-q-x" aria-label="ล้างคำค้น" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="fb-more">
+        <div class="seg" id="f-type" role="group" aria-label="ประเภทกองทุน"></div>
+        <select class="sel" id="f-cls" aria-label="Classification"></select>
+        <button type="button" class="ghost-btn" id="f-reset" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>ล้างตัวกรอง</button>
+        <span class="count-pill" id="f-count">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="split">
+    <div class="fl">
+      <div class="fl-bar">
+        <span class="fl-title">รายชื่อกองทุน</span>
+        <select class="sel sm" id="f-sort" aria-label="เรียงลำดับ">
+          <option value="name">เรียง: ชื่อ A–Z</option>
+          <option value="top10">เรียง: Top 10 กระจุกตัวมาก → น้อย</option>
+          <option value="date">เรียง: ข้อมูลใหม่ล่าสุด</option>
+        </select>
+      </div>
+      <div id="fl-list"></div>
+    </div>
+    <aside class="fd" id="fd" aria-live="polite"></aside>
+  </div>
+  <div class="fd-backdrop" id="fd-backdrop"></div>
 </div>
-<main>
 
-  <section class="panel active" id="panel-funds">
-    <div class="row searchbar">
-      <input type="text" id="fundQ" placeholder="Search Fund Name, Mnemonic, Underlying, ISIN, Classification…" autocomplete="off">
-      <button class="btn" id="fundClear">Clear</button>
+<!-- ═════════ Tab: lookup ═════════ -->
+<div id="tab-lookup" hidden>
+  <div class="filterbar">
+    <div class="filterbar-inner">
+      <div class="search-wrap">
+        <span class="search-icon"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
+        <input type="search" id="l-q" placeholder="พิมพ์ Ticker หรือชื่อบริษัท เช่น NVDA, Samsung…" autocomplete="off">
+        <kbd class="kbd" id="l-kbd">/</kbd>
+        <button type="button" class="search-x" id="l-q-x" aria-label="ล้างคำค้น" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="fb-more">
+        <button type="button" class="chip-btn" id="l-mag7" aria-pressed="false" title="AAPL, NVDA, AMZN, TSLA, MSFT, META, GOOG / GOOGL">MAG7</button>
+        <select class="sel" id="l-sort" aria-label="เรียงลำดับ">
+          <option value="pct">เรียง: สัดส่วนมาก → น้อย</option>
+          <option value="name">เรียง: ชื่อกองทุน A–Z</option>
+        </select>
+        <select class="sel" id="l-limit" aria-label="จำนวนที่แสดง">
+          <option value="0">แสดงทั้งหมด</option>
+          <option value="10">แสดง Top 10</option>
+          <option value="20">แสดง Top 20</option>
+          <option value="50">แสดง Top 50</option>
+          <option value="100">แสดง Top 100</option>
+        </select>
+        <button type="button" class="ghost-btn" id="l-reset" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>ล้างตัวกรอง</button>
+        <span class="count-pill" id="l-count"></span>
+      </div>
     </div>
-    <div class="count" id="fundCount"></div>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th>Fund Name</th><th>Mnemonic</th><th>Underlying</th><th>Classification</th><th>Type</th><th>As of</th><th class="num">Holdings</th></tr></thead>
-        <tbody id="fundRows"></tbody>
+  </div>
+  <div class="lk">
+    <div class="lk-sum" id="l-sum"></div>
+    <div class="lk-card" id="l-card" hidden>
+      <table class="lk-table">
+        <thead><tr><th class="c-fund">กองทุน</th><th class="c-tk">Ticker</th><th class="c-co">บริษัท</th><th class="c-pct num">สัดส่วน (%)</th><th class="c-date">ข้อมูล ณ</th></tr></thead>
+        <tbody id="l-rows"></tbody>
       </table>
+      <div class="more-wrap" id="l-more" hidden></div>
     </div>
-  </section>
+  </div>
+</div>
 
-  <section class="panel" id="panel-company">
-    <div class="row searchbar">
-      <input type="text" id="coQ" placeholder="Search by Ticker or Company Name…" autocomplete="off">
-      <button class="btn" id="coClear">Clear</button>
-    </div>
-    <div class="row">
-      <button class="btn" id="mag7Btn" title="Apple, Nvidia, Amazon, Tesla, Microsoft, Meta, Alphabet (GOOG/GOOGL)">MAG7</button>
-      <label>Show top</label>
-      <select id="coLimit">
-        <option>10</option><option>20</option><option>50</option><option>100</option><option value="0" selected>All</option>
-      </select>
-      <label>sort</label>
-      <select id="coSort">
-        <option value="real">Percentage (desc)</option>
-        <option value="name">Fund Name (A-Z)</option>
-      </select>
-      <button class="btn" id="coReset">Reset filters</button>
-    </div>
-    <div class="count" id="coCount"></div>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th>Fund Name</th><th>Mnemonic</th><th>Matched Ticker</th><th>Matched Company</th><th class="num">Percentage (%)</th><th>As of</th></tr></thead>
-        <tbody id="coRows"></tbody>
-      </table>
-    </div>
-  </section>
-
-</main>
 <script src="fund_data.js"></script>
 <script>
-const FUNDS = window.FUND_DATA || [];
-const $ = s => document.querySelector(s);
-const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const rpct = n => (n==null||n==='')?'':(Number(n)*100).toFixed(4);
-function fmtDate(s){
-  if(!s) return '';
-  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if(!m) return s;
-  let y = +m[1];
-  if(y >= 2500) y -= 543;   // guard: Buddhist-era year -> Gregorian
-  return m[3]+'/'+m[2]+'/'+y;
+'use strict';
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const num = v => (v === null || v === undefined || v === '' || !isFinite(+v)) ? null : +v;
+const clean = v => { const s = String(v == null ? '' : v).trim(); return /^(null|#n\/a|n\/a)$/i.test(s) ? '' : s; };
+const fmtPct = (v, dp = 2) => v == null ? '—' : v.toFixed(dp) + '%';
+const isMobile = () => matchMedia('(max-width: 720px)').matches;
+const ICO_X = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+/* date "2026-07-31" (or a Buddhist-era 2569-…) -> ISO with Gregorian year */
+function isoDate(s) {
+  const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '';
+  let y = +m[1]; if (y >= 2500) y -= 543;
+  return `${y}-${m[2]}-${m[3]}`;
 }
-function topSum(holdings,n){
-  return holdings.slice(0,n).reduce((a,h)=>a+(Number(h.realPercentage)||0),0)*100;
+const fmtDate = iso => { if (!iso) return '—'; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
+
+/* country / sector list -> [{name, pct}] in percent, largest first */
+function normAlloc(arr) {
+  const items = (Array.isArray(arr) ? arr : [])
+    .map(a => ({ name: clean(a && a.name), pct: num(a && a.pct) }))
+    .filter(a => a.name);
+  const total = items.reduce((t, a) => t + (a.pct || 0), 0);
+  if (total > 0 && total <= 1.5) items.forEach(a => { if (a.pct != null) a.pct *= 100; });   // given as fractions
+  items.sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1));
+  return items;
 }
 
-/* MAG7 = Magnificent Seven */
-const MAG7 = ['AAPL','NVDA','AMZN','TSLA','MSFT','META','GOOG','GOOGL'];
-function isMag7(ticker){
-  const root = String(ticker||'').toUpperCase().split(/[.\s]/)[0];
-  return MAG7.includes(root);
-}
-let mag7On = false;
-
-$('#stat').textContent = FUNDS.length + ' funds · ' +
-  FUNDS.reduce((a,f)=>a+f.holdings.length,0) + ' holding rows';
-
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
-  t.classList.add('active');
-  $('#panel-'+t.dataset.tab).classList.add('active');
+/* ── data ── */
+const RAW = Array.isArray(window.FUND_DATA) ? window.FUND_DATA : null;
+const FUNDS = (RAW || []).map((f, i) => {
+  const holdings = (f.holdings || []).map(h => {
+    let p = num(h.pct);
+    if (p == null && num(h.realPercentage) != null) p = num(h.realPercentage) * 100;   // older export format
+    const o = { ticker: clean(h.ticker), company: clean(h.company), pct: p };
+    o.hay = (o.ticker + ' ' + o.company).toLowerCase();
+    return o;
+  }).sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1));
+  const sumTop = n => holdings.slice(0, n).reduce((t, h) => t + (h.pct || 0), 0);
+  const o = {
+    id: i, name: clean(f.name), classification: clean(f.classification), type: clean(f.type),
+    mnemonic: clean(f.mnemonic), isin: clean(f.isin), underlying: clean(f.underlying), date: isoDate(f.dateAsOf),
+    holdings, countries: normAlloc(f.countries), sectors: normAlloc(f.sectors),
+    top10: holdings.length ? sumTop(10) : null, top20: holdings.length ? sumTop(20) : null,
+    total: holdings.length ? sumTop(holdings.length) : null,
+  };
+  o.hay = [o.name, o.mnemonic, o.isin, o.underlying, o.classification, o.type].join(' ').toLowerCase();
+  return o;
 });
-function goTab(name){ document.querySelector('.tab[data-tab="'+name+'"]').click(); }
 
-/* ---------- holdings table + summary (shared) ---------- */
-function holdingsHTML(f){
-  const max = Math.max(...f.holdings.map(h=>Number(h.realPercentage)||0), 0.0001);
-  const t10 = topSum(f.holdings,10), t20 = topSum(f.holdings,20), tot = topSum(f.holdings,f.holdings.length);
-  const rows = f.holdings.map((h,i)=>`
-    <tr>
-      <td data-label="#" class="muted">${i+1}</td>
-      <td data-label="Ticker">${h.ticker?`<a class="tk" href="#" data-tk="${esc(h.ticker)}">${esc(h.ticker)}</a>`:''}</td>
-      <td data-label="Company">${esc(h.company)}</td>
-      <td data-label="Percentage (%)" class="num">${rpct(h.realPercentage)}<span class="bar" style="width:${(Number(h.realPercentage)||0)/max*60}px"></span></td>
-      <td data-label="As of" class="muted">${fmtDate(f.dateAsOf)}</td>
-    </tr>`).join('');
-  return `
-    <table class="inner">
-      <thead><tr><th>#</th><th>Ticker</th><th>Company Name</th><th class="num">Percentage (%)</th><th>As of</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div class="sumbox">
-      <div>Top 10 holdings <b>${t10.toFixed(4)}%</b></div>
-      <div>Top 20 holdings <b>${t20.toFixed(4)}%</b></div>
-      <div>All ${f.holdings.length} holdings <b>${tot.toFixed(4)}%</b></div>
-    </div>`;
-}
-function wireTickerLinks(scope){
-  scope.querySelectorAll('a[data-tk]').forEach(a=>a.onclick=e=>{
-    e.preventDefault(); mag7On=false; syncMag7Btn(); $('#coQ').value=a.dataset.tk; goTab('company'); renderCompany();
-  });
-}
+const MAG7 = new Set(['AAPL', 'NVDA', 'AMZN', 'TSLA', 'MSFT', 'META', 'GOOG', 'GOOGL']);
+const isMag7 = t => MAG7.has(String(t || '').toUpperCase().split(/[.\s]/)[0]);
 
-/* ---------- Fund search (expand in place) ---------- */
-function renderFunds(){
-  const q = $('#fundQ').value.trim().toLowerCase();
-  let list = FUNDS.filter(f => !q ||
-    (f.name+' '+f.mnemonic+' '+f.underlying+' '+f.isin+' '+f.classification+' '+f.type).toLowerCase().includes(q));
-  list = list.slice().sort((a,b)=>a.name.localeCompare(b.name));
-  $('#fundCount').textContent = list.length + ' fund' + (list.length===1?'':'s');
-  const tb = $('#fundRows');
-  tb.innerHTML = list.map(f=>`
-    <tr class="main clickable" data-id="${f.id}">
-      <td class="cell-title"><span class="caret">&#9656;</span>${esc(f.name)}</td>
-      <td data-label="Mnemonic">${f.mnemonic?`<span class="pill">${esc(f.mnemonic)}</span>`:''}</td>
-      <td data-label="Underlying" class="muted">${esc(f.underlying)}</td>
-      <td data-label="Classification" class="muted">${esc(f.classification)}</td>
-      <td data-label="Type" class="muted">${esc(f.type)}</td>
-      <td data-label="As of" class="muted">${fmtDate(f.dateAsOf)}</td>
-      <td data-label="Holdings" class="num">${f.holdings.length}</td>
-    </tr>
-    <tr class="expand" data-for="${f.id}" hidden><td colspan="7"></td></tr>`).join('')
-    || '<tr><td colspan="7" class="empty">No matches</td></tr>';
-  tb.querySelectorAll('tr.main').forEach(tr=>{
-    tr.onclick = ()=>{
-      const ex = tb.querySelector('tr.expand[data-for="'+tr.dataset.id+'"]');
-      const willOpen = ex.hidden;
-      if(willOpen && !ex.dataset.loaded){
-        ex.firstElementChild.innerHTML = holdingsHTML(FUNDS[+tr.dataset.id]);
-        ex.dataset.loaded = '1';
-        wireTickerLinks(ex);
-      }
-      ex.hidden = !willOpen;
-      tr.classList.toggle('open', willOpen);
-      tr.querySelector('.caret').innerHTML = willOpen ? '&#9662;' : '&#9656;';
-    };
-  });
-}
-$('#fundQ').oninput = renderFunds;
-$('#fundClear').onclick = ()=>{ $('#fundQ').value=''; renderFunds(); $('#fundQ').focus(); };
+const S = {
+  tab: 'funds',
+  fq: '', ftype: '', fcls: '', fsort: 'name', sel: null, seg: 'holdings', list: [],
+  lq: '', mag7: false, lsort: 'pct', llimit: 0, lshown: 300,
+};
 
-/* ---------- open a fund expanded in the Search Funds tab ---------- */
-function openFund(id){
-  const f = FUNDS[id]; if(!f) return;
-  goTab('funds');
-  $('#fundQ').value = f.name;
-  renderFunds();
-  const tr = $('#fundRows').querySelector('tr.main[data-id="'+id+'"]');
-  if(tr){ tr.click(); tr.scrollIntoView({block:'start'}); }
+/* ── header ── */
+$('#h-funds').textContent = FUNDS.length.toLocaleString();
+const latest = FUNDS.reduce((m, f) => f.date > m ? f.date : m, '');
+$('#h-date').textContent = fmtDate(latest);
+
+/* ── theme ── */
+$('#theme-btn').onclick = () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+  try { localStorage.setItem('fhTheme', root.dataset.theme); } catch (e) {}
+};
+
+/* ── tabs ── */
+function switchTab(tab) {
+  S.tab = tab;
+  $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  $('#tab-funds').hidden = tab !== 'funds';
+  $('#tab-lookup').hidden = tab !== 'lookup';
+  closeSheet();
+  updateOffset();
+}
+$$('.tab-btn').forEach(b => b.onclick = () => { switchTab(b.dataset.tab); window.scrollTo(0, 0); });
+
+/* the sticky stack height, used by the detail panel and table headers */
+function updateOffset() {
+  const fb = $(`#tab-${S.tab} .filterbar`);
+  if (!fb) return;
+  const top = parseFloat(getComputedStyle(fb).top) || 0;
+  document.documentElement.style.setProperty('--sticky-offset', (top + fb.offsetHeight) + 'px');
+}
+addEventListener('resize', updateOffset);
+
+const debounce = (fn, ms = 120) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+const terms = q => q.toLowerCase().split(/\s+/).filter(Boolean);
+
+/* ═════════ Funds tab ═════════ */
+function buildFundFilters() {
+  const types = [...new Set(FUNDS.map(f => f.type).filter(Boolean))].sort();
+  $('#f-type').innerHTML = `<button type="button" data-type="" class="on">ทั้งหมด</button>` +
+    types.map(t => `<button type="button" data-type="${esc(t)}">${esc(t)} <span class="n">${FUNDS.filter(f => f.type === t).length}</span></button>`).join('');
+  const cls = {};
+  FUNDS.forEach(f => { if (f.classification) cls[f.classification] = (cls[f.classification] || 0) + 1; });
+  $('#f-cls').innerHTML = `<option value="">ทุก Classification</option>` +
+    Object.keys(cls).sort().map(c => `<option value="${esc(c)}">${esc(c)} (${cls[c]})</option>`).join('');
 }
 
-/* ---------- Ticker / Company search ---------- */
-function syncMag7Btn(){ $('#mag7Btn').classList.toggle('on', mag7On); }
+function filteredFunds() {
+  const t = terms(S.fq);
+  const list = FUNDS.filter(f =>
+    (!S.ftype || f.type === S.ftype) && (!S.fcls || f.classification === S.fcls) && t.every(x => f.hay.includes(x)));
+  if (S.fsort === 'top10') list.sort((a, b) => (b.top10 ?? -1) - (a.top10 ?? -1));
+  else if (S.fsort === 'date') list.sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
+  else list.sort((a, b) => a.name.localeCompare(b.name));
+  return list;
+}
 
-function renderCompany(){
-  const q = $('#coQ').value.trim().toLowerCase();
-  const limit = +$('#coLimit').value;
-  const sort = $('#coSort').value;
-  const rows = [];
-  const active = q || mag7On;
-  if(active){
-    FUNDS.forEach(f=>f.holdings.forEach(h=>{
-      const textOk = !q || (h.ticker+' '+h.company).toLowerCase().includes(q);
-      const magOk  = !mag7On || isMag7(h.ticker);
-      if(textOk && magOk) rows.push({fund:f,h});
-    }));
+function renderFundList() {
+  const list = S.list = filteredFunds();
+  $('#f-count').textContent = list.length === FUNDS.length ? `${FUNDS.length} กองทุน` : `${list.length} / ${FUNDS.length} กองทุน`;
+  $('#f-q-x').hidden = !S.fq; $('#f-kbd').hidden = !!S.fq;
+  $('#f-reset').hidden = !(S.fq || S.ftype || S.fcls);
+  $('#f-cls').classList.toggle('set', !!S.fcls);
+  $$('#f-type button').forEach(b => b.classList.toggle('on', b.dataset.type === S.ftype));
+
+  if (!RAW) {
+    $('#fl-list').innerHTML = `<div class="state-msg">ไม่พบไฟล์ <b>fund_data.js</b><br>ให้รันมาโคร ExportFundHoldingsToJS ใน Excel ก่อน แล้ววางไฟล์ไว้โฟลเดอร์เดียวกับหน้านี้</div>`;
+    return;
   }
-  rows.sort((a,b)=> sort==='name'
-    ? a.fund.name.localeCompare(b.fund.name)
-    : (Number(b.h.realPercentage)||0)-(Number(a.h.realPercentage)||0));
-  const shown = limit>0 ? rows.slice(0,limit) : rows;
-  $('#coCount').textContent = active
-    ? (mag7On?'MAG7 · ':'') +
-      `${rows.length} matching holding row${rows.length===1?'':'s'} across ${new Set(rows.map(r=>r.fund.id)).size} fund(s)`
-      + (limit>0 && rows.length>limit ? ` — showing top ${limit}` : '')
-    : '';
-  $('#coRows').innerHTML = shown.map(r=>`
-    <tr class="main clickable" data-id="${r.fund.id}">
-      <td class="cell-title">${esc(r.fund.name)}</td>
-      <td data-label="Mnemonic">${r.fund.mnemonic?`<span class="pill">${esc(r.fund.mnemonic)}</span>`:''}</td>
-      <td data-label="Ticker">${esc(r.h.ticker)}</td>
-      <td data-label="Company" class="muted">${esc(r.h.company)}</td>
-      <td data-label="Percentage (%)" class="num">${rpct(r.h.realPercentage)}</td>
-      <td data-label="As of" class="muted">${fmtDate(r.fund.dateAsOf)}</td>
-    </tr>`).join('')
-    || `<tr><td colspan="6" class="empty">${active?'No matches':'Type a ticker / company name above, or tap MAG7'}</td></tr>`;
-  $('#coRows').querySelectorAll('tr.main').forEach(tr=>tr.onclick=()=>openFund(+tr.dataset.id));
+  if (!list.length) {
+    $('#fl-list').innerHTML = `<div class="state-msg">ไม่พบกองทุนที่ตรงกับเงื่อนไข</div>`;
+    return;
+  }
+  $('#fl-list').innerHTML = list.map(f => `
+    <div class="fl-row${f.id === S.sel ? ' on' : ''}" data-id="${f.id}">
+      <div class="fl-main">
+        <div class="fl-code"><span class="c">${esc(f.name)}</span>${f.mnemonic ? `<span class="mn">${esc(f.mnemonic)}</span>` : ''}</div>
+        <div class="fl-name">${esc(f.underlying || f.classification || '')}</div>
+      </div>
+      <div class="fl-right">
+        ${S.fsort === 'top10'
+          ? `<div class="fl-val">${fmtPct(f.top10, 1)}</div>`
+          : `<div class="fl-type${f.type === 'ETF' ? ' etf' : ''}">${esc(f.type)}</div>`}
+        <div class="fl-date">${fmtDate(f.date)}</div>
+      </div>
+    </div>`).join('');
 }
-$('#coQ').oninput = renderCompany;
-$('#coLimit').onchange = renderCompany;
-$('#coSort').onchange = renderCompany;
-$('#mag7Btn').onclick = ()=>{ mag7On=!mag7On; syncMag7Btn(); renderCompany(); };
-$('#coClear').onclick = ()=>{ $('#coQ').value=''; renderCompany(); $('#coQ').focus(); };
-$('#coReset').onclick = ()=>{ $('#coQ').value=''; mag7On=false; syncMag7Btn(); $('#coLimit').value='0'; $('#coSort').value='real'; renderCompany(); };
 
-renderFunds();
-renderCompany();
+function selectFund(id, { open = true, scroll = false } = {}) {
+  if (!FUNDS[id]) return;
+  S.sel = id;
+  $$('#fl-list .fl-row').forEach(r => r.classList.toggle('on', +r.dataset.id === id));
+  renderDetail();
+  $('#fd').scrollTop = 0;
+  if (scroll) { const row = $(`#fl-list .fl-row[data-id="${id}"]`); if (row) row.scrollIntoView({ block: 'nearest' }); }
+  if (open && isMobile()) document.body.classList.add('fd-open');
+}
+function closeSheet() { document.body.classList.remove('fd-open'); }
+
+function kpi(label, value, sub, isText) {
+  return `<div class="kpi"><div class="kpi-l">${label}</div><div class="kpi-v${isText ? ' txt' : ''}" title="${esc(value)}">${esc(value)}</div>${sub ? `<div class="kpi-s">${sub}</div>` : ''}</div>`;
+}
+
+function renderDetail() {
+  const fd = $('#fd');
+  const f = FUNDS[S.sel];
+  if (!f) {
+    fd.innerHTML = `<div class="fd-empty"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>เลือกกองทุนจากรายการด้านซ้าย<br>เพื่อดู Holdings, สัดส่วนประเทศ และอุตสาหกรรม</div>`;
+    return;
+  }
+  const c0 = f.countries[0], s0 = f.sectors[0];
+  fd.innerHTML = `
+    <div class="fd-top">
+      <div style="min-width:0">
+        <div class="fd-code">${esc(f.name)}</div>
+        ${f.underlying ? `<div class="fd-name">${esc(f.underlying)}</div>` : ''}
+      </div>
+      <button type="button" class="fd-close" aria-label="ปิด">${ICO_X}</button>
+    </div>
+    <div class="fd-tags">
+      ${f.type ? `<span class="tag${f.type === 'ETF' ? ' etf' : ''}">${esc(f.type)}</span>` : ''}
+      ${f.mnemonic ? `<span class="tag">Mnemonic <b>${esc(f.mnemonic)}</b></span>` : ''}
+      ${f.classification ? `<span class="tag">${esc(f.classification)}</span>` : ''}
+      ${f.isin ? `<span class="tag">ISIN <b>${esc(f.isin)}</b></span>` : ''}
+    </div>
+    <div class="fd-asof">ข้อมูล ณ <b>${fmtDate(f.date)}</b></div>
+    <div class="kpis">
+      ${kpi('Top 10 holdings', fmtPct(f.top10))}
+      ${kpi('Top 20 holdings', fmtPct(f.top20))}
+      ${kpi('ประเทศหลัก', c0 ? c0.name : '—', c0 ? fmtPct(c0.pct) : '', true)}
+      ${kpi('อุตสาหกรรมหลัก', s0 ? s0.name : '—', s0 ? fmtPct(s0.pct) : '', true)}
+    </div>
+    <div class="seg fd-seg" role="tablist">
+      <button type="button" data-seg="holdings">Holdings <span class="n">${f.holdings.length}</span></button>
+      <button type="button" data-seg="countries">ประเทศ <span class="n">${f.countries.length}</span></button>
+      <button type="button" data-seg="sectors">อุตสาหกรรม <span class="n">${f.sectors.length}</span></button>
+    </div>
+    <div id="fd-body"></div>`;
+  renderSeg();
+}
+
+function renderSeg() {
+  const f = FUNDS[S.sel]; if (!f) return;
+  $$('#fd [data-seg]').forEach(b => b.classList.toggle('on', b.dataset.seg === S.seg));
+  const body = $('#fd-body');
+  if (S.seg === 'holdings') {
+    if (!f.holdings.length) { body.innerHTML = `<div class="none">ไม่มีข้อมูล Holdings ของกองทุนนี้</div>`; return; }
+    const max = Math.max(...f.holdings.map(h => h.pct || 0), 0.0001);
+    body.innerHTML = f.holdings.map((h, i) => `
+      <div class="hrow">
+        <span class="h-rank">${i + 1}</span>
+        <div style="min-width:0">
+          <div class="h-co">${esc(h.company || '—')}</div>
+          <div class="h-sub">
+            ${h.ticker ? `<button type="button" class="tk" data-tk="${esc(h.ticker)}" title="ดูว่ากองทุนไหนถือตัวนี้บ้าง">${esc(h.ticker)}</button>` : `<span class="no-tk">ไม่มี Ticker</span>`}
+            <span class="h-trk"><i style="width:${((h.pct || 0) / max * 100).toFixed(1)}%"></i></span>
+          </div>
+        </div>
+        <span class="h-val">${fmtPct(h.pct)}</span>
+      </div>`).join('') + `
+      <div class="sec-note">
+        <span>Top 10 รวม <b>${fmtPct(f.top10)}</b></span>
+        <span>Top 20 รวม <b>${fmtPct(f.top20)}</b></span>
+        <span>ทั้งหมด ${f.holdings.length} รายการ รวม <b>${fmtPct(f.total)}</b></span>
+      </div>`;
+    return;
+  }
+  const items = S.seg === 'countries' ? f.countries : f.sectors;
+  const label = S.seg === 'countries' ? 'สัดส่วนประเทศ' : 'สัดส่วนอุตสาหกรรม';
+  if (!items.length) { body.innerHTML = `<div class="none">ยังไม่มีข้อมูล${label}ของกองทุนนี้</div>`; return; }
+  const max = Math.max(...items.map(a => a.pct || 0), 0.0001);
+  const total = items.reduce((t, a) => t + (a.pct || 0), 0);
+  body.innerHTML = items.map(a => `
+    <div class="arow">
+      <span class="a-lbl" title="${esc(a.name)}">${esc(a.name)}</span>
+      <span class="a-trk"><i style="width:${((a.pct || 0) / max * 100).toFixed(1)}%"></i></span>
+      <span class="a-val">${fmtPct(a.pct)}</span>
+    </div>`).join('') + `
+    <div class="sec-note"><span>${label} ${items.length} รายการ รวม <b>${fmtPct(total)}</b></span></div>`;
+}
+
+/* events: funds tab */
+$('#f-q').addEventListener('input', debounce(e => { S.fq = e.target.value.trim(); renderFundList(); updateOffset(); }));
+$('#f-q-x').onclick = () => { $('#f-q').value = ''; S.fq = ''; renderFundList(); updateOffset(); $('#f-q').focus(); };
+$('#f-type').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.ftype = b.dataset.type; renderFundList(); updateOffset(); };
+$('#f-cls').onchange = e => { S.fcls = e.target.value; renderFundList(); updateOffset(); };
+$('#f-sort').onchange = e => { S.fsort = e.target.value; renderFundList(); };
+$('#f-reset').onclick = () => {
+  S.fq = S.ftype = S.fcls = ''; $('#f-q').value = ''; $('#f-cls').value = '';
+  renderFundList(); updateOffset();
+};
+$('#fl-list').onclick = e => { const r = e.target.closest('.fl-row'); if (r) selectFund(+r.dataset.id); };
+$('#fd').onclick = e => {
+  if (e.target.closest('.fd-close')) return closeSheet();
+  const sg = e.target.closest('[data-seg]');
+  if (sg) { S.seg = sg.dataset.seg; renderSeg(); return; }
+  const tk = e.target.closest('.tk');
+  if (tk) lookupTicker(tk.dataset.tk);
+};
+$('#fd-backdrop').onclick = closeSheet;
+
+/* ═════════ Lookup tab ═════════ */
+// most widely held names, shown before the user types anything
+const POPULAR = (() => {
+  const m = new Map();
+  FUNDS.forEach(f => f.holdings.forEach(h => {
+    if (!h.ticker) return;
+    const e = m.get(h.ticker) || { ticker: h.ticker, company: h.company, funds: new Set() };
+    e.funds.add(f.id); m.set(h.ticker, e);
+  }));
+  return [...m.values()].sort((a, b) => b.funds.size - a.funds.size).slice(0, 12);
+})();
+
+function lookupRows() {
+  const t = terms(S.lq);
+  if (!t.length && !S.mag7) return null;
+  const rows = [];
+  FUNDS.forEach(f => f.holdings.forEach(h => {
+    if (S.mag7 && !isMag7(h.ticker)) return;
+    if (t.length && !t.every(x => h.hay.includes(x))) return;
+    rows.push({ f, h });
+  }));
+  if (S.lsort === 'name') rows.sort((a, b) => a.f.name.localeCompare(b.f.name) || (b.h.pct ?? -1) - (a.h.pct ?? -1));
+  else rows.sort((a, b) => (b.h.pct ?? -1) - (a.h.pct ?? -1));
+  return rows;
+}
+
+const chip = (tk, co, n) =>
+  `<button type="button" class="co-chip" data-q="${esc(tk || co)}"><b>${esc(tk || '—')}</b><span class="co">${esc(co)}</span><span class="n">${n} กองทุน</span></button>`;
+
+function renderLookup() {
+  $('#l-q-x').hidden = !S.lq; $('#l-kbd').hidden = !!S.lq;
+  $('#l-mag7').setAttribute('aria-pressed', S.mag7);
+  $('#l-reset').hidden = !(S.lq || S.mag7 || S.lsort !== 'pct' || S.llimit);
+  $('#l-sort').classList.toggle('set', S.lsort !== 'pct');
+  $('#l-limit').classList.toggle('set', !!S.llimit);
+
+  const rows = lookupRows();
+  const sum = $('#l-sum');
+  if (!rows) {
+    $('#l-count').textContent = '';
+    $('#l-card').hidden = true;
+    sum.innerHTML = `
+      <div class="lk-h">หุ้นที่ถูกถือในหลายกองทุนที่สุด <span class="hint">กดเพื่อดูว่ามีกองทุนไหนถือบ้าง</span></div>
+      <div class="co-chips">${POPULAR.map(p => chip(p.ticker, p.company, p.funds.size)).join('')}</div>`;
+    return;
+  }
+
+  const fundsHit = new Set(rows.map(r => r.f.id)).size;
+  $('#l-count').textContent = `${rows.length.toLocaleString()} รายการ · ${fundsHit} กองทุน`;
+
+  // which companies matched?
+  const g = new Map();
+  rows.forEach(r => {
+    const key = r.h.ticker || r.h.company;
+    const e = g.get(key) || { ticker: r.h.ticker, company: r.h.company, funds: new Set(), pcts: [] };
+    e.funds.add(r.f.id); if (r.h.pct != null) e.pcts.push(r.h.pct); g.set(key, e);
+  });
+  const groups = [...g.values()].sort((a, b) => b.funds.size - a.funds.size);
+  if (!rows.length) {
+    sum.innerHTML = `<div class="state-msg" style="padding:18px">ไม่พบหุ้น / บริษัทที่ตรงกับ “${esc(S.lq)}”${S.mag7 ? ' ในกลุ่ม MAG7' : ''}</div>`;
+  } else if (groups.length === 1) {
+    const e = groups[0];
+    const avg = e.pcts.length ? e.pcts.reduce((t, v) => t + v, 0) / e.pcts.length : null;
+    const top = rows[0];
+    sum.innerHTML = `
+      <div class="one">
+        <div style="min-width:0"><div class="one-name">${esc(e.company || e.ticker)}</div><div class="one-tk">${esc(e.ticker || '')}</div></div>
+        <div class="one-stat"><b>${e.funds.size}</b>กองทุนที่ถือ</div>
+        <div class="one-stat"><b>${fmtPct(avg)}</b>สัดส่วนเฉลี่ย</div>
+        <div class="one-stat"><b>${fmtPct(Math.max(...e.pcts))}</b>สูงสุด${S.lsort === 'pct' ? ' · ' + esc(top.f.name) : ''}</div>
+      </div>`;
+  } else {
+    sum.innerHTML = `
+      <div class="lk-h">${S.mag7 ? 'MAG7' : 'หุ้น / บริษัทที่ตรงกับคำค้น'} <span class="hint">${groups.length} ตัว · กดเพื่อดูเฉพาะตัวนั้น</span></div>
+      <div class="co-chips">${groups.slice(0, 16).map(e => chip(e.ticker, e.company, e.funds.size)).join('')}</div>`;
+  }
+
+  const limited = S.llimit ? rows.slice(0, S.llimit) : rows;
+  const shown = limited.slice(0, S.lshown);
+  $('#l-card').hidden = !rows.length;
+  $('#l-rows').innerHTML = shown.map(({ f, h }) => `
+    <tr data-id="${f.id}">
+      <td class="c-fund" data-label="กองทุน">
+        <div class="f-code"><span class="c">${esc(f.name)}</span>${f.mnemonic ? `<span class="mn">${esc(f.mnemonic)}</span>` : ''}</div>
+        <div class="f-sub">${esc(f.underlying || f.classification)}</div>
+      </td>
+      <td class="td-tk" data-label="Ticker">${esc(h.ticker || '—')}</td>
+      <td class="td-co" data-label="บริษัท" title="${esc(h.company)}">${esc(h.company)}</td>
+      <td class="num td-pct" data-label="สัดส่วน (%)">${fmtPct(h.pct)}</td>
+      <td class="td-date" data-label="ข้อมูล ณ">${fmtDate(f.date)}</td>
+    </tr>`).join('');
+  const left = limited.length - shown.length;
+  $('#l-more').hidden = left <= 0;
+  $('#l-more').innerHTML = left > 0 ? `<button type="button" class="ghost-btn" id="l-more-btn">แสดงเพิ่ม (เหลืออีก ${left.toLocaleString()} รายการ)</button>` : '';
+}
+
+function lookupTicker(q) {
+  S.lq = q; S.mag7 = false; S.lshown = 300;
+  $('#l-q').value = q;
+  switchTab('lookup'); renderLookup(); updateOffset(); window.scrollTo(0, 0);
+}
+function openFundFromLookup(id) {
+  const f = FUNDS[id]; if (!f) return;
+  switchTab('funds');
+  if (!S.list.some(x => x.id === id)) { $('#f-reset').click(); }   // make sure it is in the list
+  selectFund(id, { scroll: true });
+}
+
+/* events: lookup tab */
+const relookup = () => { S.lshown = 300; renderLookup(); updateOffset(); };
+$('#l-q').addEventListener('input', debounce(e => { S.lq = e.target.value.trim(); relookup(); }, 150));
+$('#l-q-x').onclick = () => { $('#l-q').value = ''; S.lq = ''; relookup(); $('#l-q').focus(); };
+$('#l-mag7').onclick = () => { S.mag7 = !S.mag7; relookup(); };
+$('#l-sort').onchange = e => { S.lsort = e.target.value; relookup(); };
+$('#l-limit').onchange = e => { S.llimit = +e.target.value; relookup(); };
+$('#l-reset').onclick = () => {
+  S.lq = ''; S.mag7 = false; S.lsort = 'pct'; S.llimit = 0;
+  $('#l-q').value = ''; $('#l-sort').value = 'pct'; $('#l-limit').value = '0';
+  relookup();
+};
+$('#l-sum').onclick = e => { const c = e.target.closest('.co-chip'); if (c) { S.lq = c.dataset.q; $('#l-q').value = S.lq; relookup(); } };
+$('#l-rows').onclick = e => { const r = e.target.closest('tr[data-id]'); if (r) openFundFromLookup(+r.dataset.id); };
+$('#l-more').onclick = e => { if (e.target.closest('#l-more-btn')) { S.lshown += 500; renderLookup(); } };
+
+/* ── keyboard: "/" search · Esc close/clear · ↑↓ move through funds ── */
+addEventListener('keydown', e => {
+  const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
+  if (e.key === '/' && !typing) { e.preventDefault(); $(S.tab === 'funds' ? '#f-q' : '#l-q').focus(); return; }
+  if (e.key === 'Escape') {
+    if (document.body.classList.contains('fd-open')) return closeSheet();
+    if (typing && document.activeElement.type === 'search' && document.activeElement.value) {
+      $(S.tab === 'funds' ? '#f-q-x' : '#l-q-x').click();
+    }
+    return;
+  }
+  if (S.tab === 'funds' && !typing && (e.key === 'ArrowDown' || e.key === 'ArrowUp') && S.list.length) {
+    e.preventDefault();
+    const i = S.list.findIndex(f => f.id === S.sel);
+    const next = e.key === 'ArrowDown' ? Math.min(i + 1, S.list.length - 1) : Math.max(i - 1, 0);
+    selectFund(S.list[i < 0 ? 0 : next].id, { open: false, scroll: true });
+  }
+});
+
+/* ── start ── */
+buildFundFilters();
+renderFundList();
+renderDetail();
+renderLookup();
+updateOffset();
 </script>
 </body>
 </html>
