@@ -24,6 +24,9 @@ try { const th = localStorage.getItem('fhTheme'); if (th === 'dark' || th === 'l
   --bar: #1f5fd1; --bar-2: #8fb0ea;
   --warn: #b54708; --warn-bg: #fef4e6;
   --etf: #6941c6; --etf-bg: #f4f0fd;
+  /* pie slices: categorical slots in fixed order, then Others / unallocated */
+  --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100; --c5: #e87ba4; --c6: #008300;
+  --c-other: #98a2b3; --c-none: #e4e7ec;
   --shadow-pop: 0 12px 32px rgba(16,24,40,.12), 0 2px 6px rgba(16,24,40,.06);
   --header-h: 56px; --tabbar-h: 44px; --sticky-offset: 154px;
   color-scheme: light;
@@ -37,6 +40,8 @@ try { const th = localStorage.getItem('fhTheme'); if (th === 'dark' || th === 'l
     --bar: #4f83ea; --bar-2: #2c4a85;
     --warn: #f5a524; --warn-bg: #2b2111;
     --etf: #b9a3f5; --etf-bg: #241c3d;
+    --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; --c6: #0ca30c;
+    --c-other: #5d6778; --c-none: #2a3242;
     --shadow-pop: 0 12px 32px rgba(0,0,0,.55);
     color-scheme: dark;
   }
@@ -49,6 +54,8 @@ try { const th = localStorage.getItem('fhTheme'); if (th === 'dark' || th === 'l
   --bar: #4f83ea; --bar-2: #2c4a85;
   --warn: #f5a524; --warn-bg: #2b2111;
   --etf: #b9a3f5; --etf-bg: #241c3d;
+  --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; --c6: #0ca30c;
+  --c-other: #5d6778; --c-none: #2a3242;
   --shadow-pop: 0 12px 32px rgba(0,0,0,.55);
   color-scheme: dark;
 }
@@ -289,6 +296,35 @@ header {
 .td-date { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 .more-wrap { text-align: center; padding: 12px; border-top: 1px solid var(--border); }
 
+/* ── Language toggle ── */
+.lang-toggle { display: flex; padding: 2px; gap: 2px; background: var(--surface-2); border-radius: 8px; }
+.lang-toggle button {
+  border: none; background: transparent; font-size: 11px; font-weight: 600; color: var(--muted);
+  padding: 3px 9px; border-radius: 6px; cursor: pointer;
+}
+.lang-toggle button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(16,24,40,.08); }
+
+/* ── Country / sector: bar ↔ pie ── */
+.alloc-head { display: flex; align-items: center; justify-content: flex-end; margin-bottom: 6px; }
+.seg.sm button { padding: 3px 9px; font-size: 12px; }
+.seg.sm .ico { width: 13px; height: 13px; }
+.pie-wrap { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 24px; align-items: center; padding: 6px 0 4px; }
+.pie-box { position: relative; width: 190px; height: 190px; }
+.pie-box svg { width: 100%; height: 100%; display: block; }
+.arc { transition: opacity .15s ease; cursor: default; }
+.pie-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; pointer-events: none; padding: 0 46px; }
+.pie-c-n { font-size: 11.5px; color: var(--text-2); line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pie-c-v { font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.legend { min-width: 0; }
+.lg-row { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 5px 6px; margin: 0 -6px; border-radius: 6px; font-size: 12.5px; transition: opacity .15s ease; }
+.lg-row:hover { background: var(--hover); }
+.lg-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.lg-n.muted { color: var(--text-2); font-weight: 400; }
+.lg-v { font-weight: 600; font-variant-numeric: tabular-nums; }
+.sw { width: 10px; height: 10px; border-radius: 3px; }
+.sw.unal { background: transparent !important; border: 1.5px dashed var(--border-strong); }
+.pie-wrap.hl .arc:not(.on), .pie-wrap.hl .lg-row:not(.on) { opacity: .28; }
+
 /* ── Phones ── */
 @media (max-width: 1100px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 720px) {
@@ -320,6 +356,9 @@ header {
   .fd-code { font-size: 18px; }
   .fd-empty { display: none; }
   .arow { grid-template-columns: minmax(90px, 40%) minmax(0, 1fr) 60px; gap: 8px; }
+  .pie-wrap { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .pie-box { margin: 0 auto; }
+  .lang-toggle button { padding: 3px 7px; }
 
   .lk { margin: 12px 12px 60px; }
   .lk-card { background: none; border: none; }
@@ -350,20 +389,24 @@ header {
         <span class="h-title">Fund Holdings Explorer</span>
         <span class="h-tag">Internal use only</span>
       </div>
-      <div class="h-sub">ที่มา: LSEG Refinitiv · Top 20 holdings, สัดส่วนประเทศ และอุตสาหกรรม</div>
+      <div class="h-sub" data-i18n="sub"></div>
     </div>
   </div>
   <div class="h-right">
-    <div><b id="h-funds">—</b> กองทุน</div>
-    <div class="h-extra">ข้อมูลล่าสุด <span id="h-date">—</span></div>
+    <div><b id="h-funds">—</b> <span data-i18n="funds"></span></div>
+    <div class="h-extra"><span data-i18n="latest"></span> <span id="h-date">—</span></div>
   </div>
 </header>
 
 <nav class="tabbar" role="tablist">
-  <button class="tab-btn active" role="tab" data-tab="funds"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>กองทุน</button>
-  <button class="tab-btn" role="tab" data-tab="lookup"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V10l7-5 7 5v11"/><path d="M10 21v-6h4v6"/></svg>ค้นหาหุ้น / บริษัท</button>
+  <button class="tab-btn active" role="tab" data-tab="funds"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span data-i18n="tabFunds"></span></button>
+  <button class="tab-btn" role="tab" data-tab="lookup"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V10l7-5 7 5v11"/><path d="M10 21v-6h4v6"/></svg><span data-i18n="tabLookup"></span></button>
   <div class="tab-tools">
-    <button type="button" class="icon-btn" id="theme-btn" aria-label="สลับโหมดสว่าง / มืด" title="สว่าง / มืด">
+    <div class="lang-toggle" role="group" aria-label="Language">
+      <button type="button" data-lang="th">TH</button>
+      <button type="button" data-lang="en">EN</button>
+    </div>
+    <button type="button" class="icon-btn" id="theme-btn" data-i18n-aria="theme">
       <svg class="ico theme-light-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       <svg class="ico theme-dark-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
     </button>
@@ -376,14 +419,14 @@ header {
     <div class="filterbar-inner">
       <div class="search-wrap">
         <span class="search-icon"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
-        <input type="search" id="f-q" placeholder="ค้นหาชื่อกองทุน, Mnemonic, ISIN, Underlying…" autocomplete="off">
+        <input type="search" id="f-q" data-i18n-ph="fPh" autocomplete="off">
         <kbd class="kbd" id="f-kbd">/</kbd>
-        <button type="button" class="search-x" id="f-q-x" aria-label="ล้างคำค้น" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        <button type="button" class="search-x" id="f-q-x" data-i18n-aria="clearQ" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
       <div class="fb-more">
-        <div class="seg" id="f-type" role="group" aria-label="ประเภทกองทุน"></div>
+        <div class="seg" id="f-type" role="group"></div>
         <select class="sel" id="f-cls" aria-label="Classification"></select>
-        <button type="button" class="ghost-btn" id="f-reset" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>ล้างตัวกรอง</button>
+        <button type="button" class="ghost-btn" id="f-reset" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg><span data-i18n="reset"></span></button>
         <span class="count-pill" id="f-count">—</span>
       </div>
     </div>
@@ -392,11 +435,11 @@ header {
   <div class="split">
     <div class="fl">
       <div class="fl-bar">
-        <span class="fl-title">รายชื่อกองทุน</span>
-        <select class="sel sm" id="f-sort" aria-label="เรียงลำดับ">
-          <option value="name">เรียง: ชื่อ A–Z</option>
-          <option value="top10">เรียง: Top 10 กระจุกตัวมาก → น้อย</option>
-          <option value="date">เรียง: ข้อมูลใหม่ล่าสุด</option>
+        <span class="fl-title" data-i18n="fundList"></span>
+        <select class="sel sm" id="f-sort">
+          <option value="name" data-i18n="sortName"></option>
+          <option value="top10" data-i18n="sortTop10"></option>
+          <option value="date" data-i18n="sortDate"></option>
         </select>
       </div>
       <div id="fl-list"></div>
@@ -412,24 +455,18 @@ header {
     <div class="filterbar-inner">
       <div class="search-wrap">
         <span class="search-icon"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
-        <input type="search" id="l-q" placeholder="พิมพ์ Ticker หรือชื่อบริษัท เช่น NVDA, Samsung…" autocomplete="off">
+        <input type="search" id="l-q" data-i18n-ph="lPh" autocomplete="off">
         <kbd class="kbd" id="l-kbd">/</kbd>
-        <button type="button" class="search-x" id="l-q-x" aria-label="ล้างคำค้น" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        <button type="button" class="search-x" id="l-q-x" data-i18n-aria="clearQ" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
       <div class="fb-more">
         <button type="button" class="chip-btn" id="l-mag7" aria-pressed="false" title="AAPL, NVDA, AMZN, TSLA, MSFT, META, GOOG / GOOGL">MAG7</button>
-        <select class="sel" id="l-sort" aria-label="เรียงลำดับ">
-          <option value="pct">เรียง: สัดส่วนมาก → น้อย</option>
-          <option value="name">เรียง: ชื่อกองทุน A–Z</option>
+        <select class="sel" id="l-sort">
+          <option value="pct" data-i18n="lSortPct"></option>
+          <option value="name" data-i18n="lSortName"></option>
         </select>
-        <select class="sel" id="l-limit" aria-label="จำนวนที่แสดง">
-          <option value="0">แสดงทั้งหมด</option>
-          <option value="10">แสดง Top 10</option>
-          <option value="20">แสดง Top 20</option>
-          <option value="50">แสดง Top 50</option>
-          <option value="100">แสดง Top 100</option>
-        </select>
-        <button type="button" class="ghost-btn" id="l-reset" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>ล้างตัวกรอง</button>
+        <select class="sel" id="l-limit"></select>
+        <button type="button" class="ghost-btn" id="l-reset" hidden><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg><span data-i18n="reset"></span></button>
         <span class="count-pill" id="l-count"></span>
       </div>
     </div>
@@ -438,7 +475,7 @@ header {
     <div class="lk-sum" id="l-sum"></div>
     <div class="lk-card" id="l-card" hidden>
       <table class="lk-table">
-        <thead><tr><th class="c-fund">กองทุน</th><th class="c-tk">Ticker</th><th class="c-co">บริษัท</th><th class="c-pct num">สัดส่วน (%)</th><th class="c-date">ข้อมูล ณ</th></tr></thead>
+        <thead><tr><th class="c-fund" data-i18n="thFund"></th><th class="c-tk">Ticker</th><th class="c-co" data-i18n="thCo"></th><th class="c-pct num" data-i18n="thPct"></th><th class="c-date" data-i18n="asOf"></th></tr></thead>
         <tbody id="l-rows"></tbody>
       </table>
       <div class="more-wrap" id="l-more" hidden></div>
@@ -456,8 +493,97 @@ const num = v => (v === null || v === undefined || v === '' || !isFinite(+v)) ? 
 const clean = v => { const s = String(v == null ? '' : v).trim(); return /^(null|#n\/a|n\/a)$/i.test(s) ? '' : s; };
 const fmtPct = (v, dp = 2) => v == null ? '—' : v.toFixed(dp) + '%';
 const isMobile = () => matchMedia('(max-width: 720px)').matches;
+const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };
 const ICO_X = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+const ICO_BAR = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h14M4 12h9M4 18h5"/></svg>';
+const ICO_PIE = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12A9 9 0 1 1 12 3v9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>';
 
+/* ═════════ Language ═════════ */
+const I18N = {
+  th: {
+    sub: 'ที่มา: LSEG Refinitiv · Top 20 holdings, สัดส่วนประเทศ และอุตสาหกรรม',
+    funds: 'กองทุน', latest: 'ข้อมูลล่าสุด',
+    tabFunds: 'กองทุน', tabLookup: 'ค้นหาหุ้น / บริษัท', theme: 'สว่าง / มืด',
+    fPh: 'ค้นหาชื่อกองทุน, Mnemonic, ISIN, Underlying…', clearQ: 'ล้างคำค้น', reset: 'ล้างตัวกรอง',
+    fundList: 'รายชื่อกองทุน',
+    sortName: 'เรียง: ชื่อ A–Z', sortTop10: 'เรียง: Top 10 กระจุกตัวมาก → น้อย', sortDate: 'เรียง: ข้อมูลใหม่ล่าสุด',
+    lPh: 'พิมพ์ Ticker หรือชื่อบริษัท เช่น NVDA, Samsung…',
+    lSortPct: 'เรียง: สัดส่วนมาก → น้อย', lSortName: 'เรียง: ชื่อกองทุน A–Z',
+    limAll: 'แสดงทั้งหมด', limN: n => `แสดง Top ${n}`,
+    thFund: 'กองทุน', thCo: 'บริษัท', thPct: 'สัดส่วน (%)', asOf: 'ข้อมูล ณ',
+    nFunds: n => `${n} กองทุน`, nOfFunds: (a, b) => `${a} / ${b} กองทุน`,
+    all: 'ทั้งหมด', allCls: 'ทุก Classification',
+    noFile: 'ไม่พบไฟล์ <b>fund_data.js</b><br>ให้รันมาโคร ExportFundHoldingsToJS ใน Excel ก่อน แล้ววางไฟล์ไว้โฟลเดอร์เดียวกับหน้านี้',
+    noMatch: 'ไม่พบกองทุนที่ตรงกับเงื่อนไข',
+    pick: 'เลือกกองทุนจากรายการด้านซ้าย<br>เพื่อดู Holdings, สัดส่วนประเทศ และอุตสาหกรรม',
+    close: 'ปิด', topCountry: 'ประเทศหลัก', topSector: 'อุตสาหกรรมหลัก',
+    segH: 'Holdings', segC: 'ประเทศ', segS: 'อุตสาหกรรม',
+    noHold: 'ไม่มีข้อมูล Holdings ของกองทุนนี้', tkTitle: 'ดูว่ากองทุนไหนถือตัวนี้บ้าง', noTk: 'ไม่มี Ticker',
+    top10Sum: 'Top 10 รวม', top20Sum: 'Top 20 รวม', allSum: n => `ทั้งหมด ${n} รายการ รวม`,
+    allocC: 'สัดส่วนประเทศ', allocS: 'สัดส่วนอุตสาหกรรม',
+    noAlloc: l => `ยังไม่มีข้อมูล${l}ของกองทุนนี้`, allocSum: (l, n) => `${l} ${n} รายการ รวม`,
+    bar: 'แท่ง', pie: 'วงกลม', others: n => `อื่น ๆ (${n} รายการ)`, unalloc: 'ไม่ระบุ / ส่วนที่เหลือ',
+    pieNote: 'กราฟวงกลมแสดง 6 อันดับแรก ที่เหลือรวมเป็น “อื่น ๆ” · ดูครบทุกรายการได้ที่มุมมองแท่ง',
+    popular: 'หุ้นที่ถูกถือในหลายกองทุนที่สุด', popularHint: 'กดเพื่อดูว่ามีกองทุนไหนถือบ้าง',
+    lCount: (r, f) => `${r} รายการ · ${f} กองทุน`,
+    lNone: (q, m) => `ไม่พบหุ้น / บริษัทที่ตรงกับ “${q}”${m ? ' ในกลุ่ม MAG7' : ''}`,
+    heldBy: 'กองทุนที่ถือ', avgW: 'สัดส่วนเฉลี่ย', maxW: 'สูงสุด',
+    matched: 'หุ้น / บริษัทที่ตรงกับคำค้น', matchedHint: n => `${n} ตัว · กดเพื่อดูเฉพาะตัวนั้น`,
+    more: n => `แสดงเพิ่ม (เหลืออีก ${n} รายการ)`,
+  },
+  en: {
+    sub: 'Source: LSEG Refinitiv · Top 20 holdings, country and sector breakdown',
+    funds: 'funds', latest: 'Latest data',
+    tabFunds: 'Funds', tabLookup: 'Stock / Company lookup', theme: 'Light / dark',
+    fPh: 'Search fund name, Mnemonic, ISIN, Underlying…', clearQ: 'Clear search', reset: 'Reset filters',
+    fundList: 'Funds',
+    sortName: 'Sort: Name A–Z', sortTop10: 'Sort: Top 10 concentration, high → low', sortDate: 'Sort: Most recent data',
+    lPh: 'Type a ticker or company, e.g. NVDA, Samsung…',
+    lSortPct: 'Sort: Weight, high → low', lSortName: 'Sort: Fund name A–Z',
+    limAll: 'Show all', limN: n => `Show top ${n}`,
+    thFund: 'Fund', thCo: 'Company', thPct: 'Weight (%)', asOf: 'As of',
+    nFunds: n => `${n} fund${n === 1 ? '' : 's'}`, nOfFunds: (a, b) => `${a} / ${b} funds`,
+    all: 'All', allCls: 'All classifications',
+    noFile: '<b>fund_data.js</b> not found<br>Run the ExportFundHoldingsToJS macro in Excel and keep the file in the same folder as this page',
+    noMatch: 'No funds match these filters',
+    pick: 'Pick a fund from the list<br>to see its holdings, country and sector breakdown',
+    close: 'Close', topCountry: 'Top country', topSector: 'Top sector',
+    segH: 'Holdings', segC: 'Countries', segS: 'Sectors',
+    noHold: 'No holdings data for this fund', tkTitle: 'See which funds hold this', noTk: 'No ticker',
+    top10Sum: 'Top 10 total', top20Sum: 'Top 20 total', allSum: n => `All ${n} holdings total`,
+    allocC: 'Country breakdown', allocS: 'Sector breakdown',
+    noAlloc: l => `No ${l.toLowerCase()} data for this fund yet`, allocSum: (l, n) => `${l}: ${n} items, total`,
+    bar: 'Bar', pie: 'Pie', others: n => `Others (${n})`, unalloc: 'Unallocated / remainder',
+    pieNote: 'The pie shows the top 6; the rest are grouped as “Others” · switch to Bar to see every item',
+    popular: 'Most widely held stocks', popularHint: 'tap to see which funds hold them',
+    lCount: (r, f) => `${r} rows · ${f} fund${f === 1 ? '' : 's'}`,
+    lNone: (q, m) => `No stock / company matches “${q}”${m ? ' in MAG7' : ''}`,
+    heldBy: 'Funds holding it', avgW: 'Average weight', maxW: 'Highest',
+    matched: 'Matching stocks / companies', matchedHint: n => `${n} names · tap one to narrow down`,
+    more: n => `Show more (${n} left)`,
+  },
+};
+let LANG = store.get('fhLang') === 'en' ? 'en' : 'th';
+const t = (k, ...a) => { const v = I18N[LANG][k] ?? I18N.th[k]; return typeof v === 'function' ? v(...a) : v; };
+
+function applyStatic() {
+  document.documentElement.lang = LANG;
+  $$('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $$('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+  $$('[data-i18n-aria]').forEach(el => { el.setAttribute('aria-label', t(el.dataset.i18nAria)); el.title = t(el.dataset.i18nAria); });
+  $$('.lang-toggle button').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
+  const lim = $('#l-limit');
+  lim.innerHTML = `<option value="0">${t('limAll')}</option>` + [10, 20, 50, 100].map(n => `<option value="${n}">${t('limN', n)}</option>`).join('');
+  lim.value = String(S.llimit);
+}
+function setLang(l) {
+  LANG = l; store.set('fhLang', l);
+  applyStatic(); buildFundFilters();
+  renderFundList(); renderDetail(); renderLookup(); updateOffset();
+}
+$$('.lang-toggle button').forEach(b => b.onclick = () => setLang(b.dataset.lang));
+
+/* ═════════ Data ═════════ */
 /* date "2026-07-31" (or a Buddhist-era 2569-…) -> ISO with Gregorian year */
 function isoDate(s) {
   const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -472,13 +598,12 @@ function normAlloc(arr) {
   const items = (Array.isArray(arr) ? arr : [])
     .map(a => ({ name: clean(a && a.name), pct: num(a && a.pct) }))
     .filter(a => a.name);
-  const total = items.reduce((t, a) => t + (a.pct || 0), 0);
+  const total = items.reduce((s, a) => s + (a.pct || 0), 0);
   if (total > 0 && total <= 1.5) items.forEach(a => { if (a.pct != null) a.pct *= 100; });   // given as fractions
   items.sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1));
   return items;
 }
 
-/* ── data ── */
 const RAW = Array.isArray(window.FUND_DATA) ? window.FUND_DATA : null;
 const FUNDS = (RAW || []).map((f, i) => {
   const holdings = (f.holdings || []).map(h => {
@@ -488,7 +613,7 @@ const FUNDS = (RAW || []).map((f, i) => {
     o.hay = (o.ticker + ' ' + o.company).toLowerCase();
     return o;
   }).sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1));
-  const sumTop = n => holdings.slice(0, n).reduce((t, h) => t + (h.pct || 0), 0);
+  const sumTop = n => holdings.slice(0, n).reduce((s, h) => s + (h.pct || 0), 0);
   const o = {
     id: i, name: clean(f.name), classification: clean(f.classification), type: clean(f.type),
     mnemonic: clean(f.mnemonic), isin: clean(f.isin), underlying: clean(f.underlying), date: isoDate(f.dateAsOf),
@@ -501,25 +626,25 @@ const FUNDS = (RAW || []).map((f, i) => {
 });
 
 const MAG7 = new Set(['AAPL', 'NVDA', 'AMZN', 'TSLA', 'MSFT', 'META', 'GOOG', 'GOOGL']);
-const isMag7 = t => MAG7.has(String(t || '').toUpperCase().split(/[.\s]/)[0]);
+const isMag7 = tk => MAG7.has(String(tk || '').toUpperCase().split(/[.\s]/)[0]);
 
 const S = {
   tab: 'funds',
   fq: '', ftype: '', fcls: '', fsort: 'name', sel: null, seg: 'holdings', list: [],
+  chart: store.get('fhChart') === 'pie' ? 'pie' : 'bar',
   lq: '', mag7: false, lsort: 'pct', llimit: 0, lshown: 300,
 };
 
 /* ── header ── */
 $('#h-funds').textContent = FUNDS.length.toLocaleString();
-const latest = FUNDS.reduce((m, f) => f.date > m ? f.date : m, '');
-$('#h-date').textContent = fmtDate(latest);
+$('#h-date').textContent = fmtDate(FUNDS.reduce((m, f) => f.date > m ? f.date : m, ''));
 
 /* ── theme ── */
 $('#theme-btn').onclick = () => {
   const root = document.documentElement;
   const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
   root.dataset.theme = dark ? 'light' : 'dark';
-  try { localStorage.setItem('fhTheme', root.dataset.theme); } catch (e) {}
+  store.set('fhTheme', root.dataset.theme);
 };
 
 /* ── tabs ── */
@@ -542,24 +667,25 @@ function updateOffset() {
 }
 addEventListener('resize', updateOffset);
 
-const debounce = (fn, ms = 120) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+const debounce = (fn, ms = 120) => { let h; return (...a) => { clearTimeout(h); h = setTimeout(() => fn(...a), ms); }; };
 const terms = q => q.toLowerCase().split(/\s+/).filter(Boolean);
 
 /* ═════════ Funds tab ═════════ */
 function buildFundFilters() {
   const types = [...new Set(FUNDS.map(f => f.type).filter(Boolean))].sort();
-  $('#f-type').innerHTML = `<button type="button" data-type="" class="on">ทั้งหมด</button>` +
-    types.map(t => `<button type="button" data-type="${esc(t)}">${esc(t)} <span class="n">${FUNDS.filter(f => f.type === t).length}</span></button>`).join('');
+  $('#f-type').innerHTML = `<button type="button" data-type="">${t('all')}</button>` +
+    types.map(ty => `<button type="button" data-type="${esc(ty)}">${esc(ty)} <span class="n">${FUNDS.filter(f => f.type === ty).length}</span></button>`).join('');
   const cls = {};
   FUNDS.forEach(f => { if (f.classification) cls[f.classification] = (cls[f.classification] || 0) + 1; });
-  $('#f-cls').innerHTML = `<option value="">ทุก Classification</option>` +
+  $('#f-cls').innerHTML = `<option value="">${t('allCls')}</option>` +
     Object.keys(cls).sort().map(c => `<option value="${esc(c)}">${esc(c)} (${cls[c]})</option>`).join('');
+  $('#f-cls').value = S.fcls;
 }
 
 function filteredFunds() {
-  const t = terms(S.fq);
+  const q = terms(S.fq);
   const list = FUNDS.filter(f =>
-    (!S.ftype || f.type === S.ftype) && (!S.fcls || f.classification === S.fcls) && t.every(x => f.hay.includes(x)));
+    (!S.ftype || f.type === S.ftype) && (!S.fcls || f.classification === S.fcls) && q.every(x => f.hay.includes(x)));
   if (S.fsort === 'top10') list.sort((a, b) => (b.top10 ?? -1) - (a.top10 ?? -1));
   else if (S.fsort === 'date') list.sort((a, b) => b.date.localeCompare(a.date) || a.name.localeCompare(b.name));
   else list.sort((a, b) => a.name.localeCompare(b.name));
@@ -568,20 +694,14 @@ function filteredFunds() {
 
 function renderFundList() {
   const list = S.list = filteredFunds();
-  $('#f-count').textContent = list.length === FUNDS.length ? `${FUNDS.length} กองทุน` : `${list.length} / ${FUNDS.length} กองทุน`;
+  $('#f-count').textContent = list.length === FUNDS.length ? t('nFunds', FUNDS.length) : t('nOfFunds', list.length, FUNDS.length);
   $('#f-q-x').hidden = !S.fq; $('#f-kbd').hidden = !!S.fq;
   $('#f-reset').hidden = !(S.fq || S.ftype || S.fcls);
   $('#f-cls').classList.toggle('set', !!S.fcls);
   $$('#f-type button').forEach(b => b.classList.toggle('on', b.dataset.type === S.ftype));
 
-  if (!RAW) {
-    $('#fl-list').innerHTML = `<div class="state-msg">ไม่พบไฟล์ <b>fund_data.js</b><br>ให้รันมาโคร ExportFundHoldingsToJS ใน Excel ก่อน แล้ววางไฟล์ไว้โฟลเดอร์เดียวกับหน้านี้</div>`;
-    return;
-  }
-  if (!list.length) {
-    $('#fl-list').innerHTML = `<div class="state-msg">ไม่พบกองทุนที่ตรงกับเงื่อนไข</div>`;
-    return;
-  }
+  if (!RAW) { $('#fl-list').innerHTML = `<div class="state-msg">${t('noFile')}</div>`; return; }
+  if (!list.length) { $('#fl-list').innerHTML = `<div class="state-msg">${t('noMatch')}</div>`; return; }
   $('#fl-list').innerHTML = list.map(f => `
     <div class="fl-row${f.id === S.sel ? ' on' : ''}" data-id="${f.id}">
       <div class="fl-main">
@@ -616,7 +736,7 @@ function renderDetail() {
   const fd = $('#fd');
   const f = FUNDS[S.sel];
   if (!f) {
-    fd.innerHTML = `<div class="fd-empty"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>เลือกกองทุนจากรายการด้านซ้าย<br>เพื่อดู Holdings, สัดส่วนประเทศ และอุตสาหกรรม</div>`;
+    fd.innerHTML = `<div class="fd-empty"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>${t('pick')}</div>`;
     return;
   }
   const c0 = f.countries[0], s0 = f.sectors[0];
@@ -626,7 +746,7 @@ function renderDetail() {
         <div class="fd-code">${esc(f.name)}</div>
         ${f.underlying ? `<div class="fd-name">${esc(f.underlying)}</div>` : ''}
       </div>
-      <button type="button" class="fd-close" aria-label="ปิด">${ICO_X}</button>
+      <button type="button" class="fd-close" aria-label="${t('close')}">${ICO_X}</button>
     </div>
     <div class="fd-tags">
       ${f.type ? `<span class="tag${f.type === 'ETF' ? ' etf' : ''}">${esc(f.type)}</span>` : ''}
@@ -634,17 +754,17 @@ function renderDetail() {
       ${f.classification ? `<span class="tag">${esc(f.classification)}</span>` : ''}
       ${f.isin ? `<span class="tag">ISIN <b>${esc(f.isin)}</b></span>` : ''}
     </div>
-    <div class="fd-asof">ข้อมูล ณ <b>${fmtDate(f.date)}</b></div>
+    <div class="fd-asof">${t('asOf')} <b>${fmtDate(f.date)}</b></div>
     <div class="kpis">
       ${kpi('Top 10 holdings', fmtPct(f.top10))}
       ${kpi('Top 20 holdings', fmtPct(f.top20))}
-      ${kpi('ประเทศหลัก', c0 ? c0.name : '—', c0 ? fmtPct(c0.pct) : '', true)}
-      ${kpi('อุตสาหกรรมหลัก', s0 ? s0.name : '—', s0 ? fmtPct(s0.pct) : '', true)}
+      ${kpi(t('topCountry'), c0 ? c0.name : '—', c0 ? fmtPct(c0.pct) : '', true)}
+      ${kpi(t('topSector'), s0 ? s0.name : '—', s0 ? fmtPct(s0.pct) : '', true)}
     </div>
     <div class="seg fd-seg" role="tablist">
-      <button type="button" data-seg="holdings">Holdings <span class="n">${f.holdings.length}</span></button>
-      <button type="button" data-seg="countries">ประเทศ <span class="n">${f.countries.length}</span></button>
-      <button type="button" data-seg="sectors">อุตสาหกรรม <span class="n">${f.sectors.length}</span></button>
+      <button type="button" data-seg="holdings">${t('segH')} <span class="n">${f.holdings.length}</span></button>
+      <button type="button" data-seg="countries">${t('segC')} <span class="n">${f.countries.length}</span></button>
+      <button type="button" data-seg="sectors">${t('segS')} <span class="n">${f.sectors.length}</span></button>
     </div>
     <div id="fd-body"></div>`;
   renderSeg();
@@ -654,40 +774,112 @@ function renderSeg() {
   const f = FUNDS[S.sel]; if (!f) return;
   $$('#fd [data-seg]').forEach(b => b.classList.toggle('on', b.dataset.seg === S.seg));
   const body = $('#fd-body');
-  if (S.seg === 'holdings') {
-    if (!f.holdings.length) { body.innerHTML = `<div class="none">ไม่มีข้อมูล Holdings ของกองทุนนี้</div>`; return; }
-    const max = Math.max(...f.holdings.map(h => h.pct || 0), 0.0001);
-    body.innerHTML = f.holdings.map((h, i) => `
-      <div class="hrow">
-        <span class="h-rank">${i + 1}</span>
-        <div style="min-width:0">
-          <div class="h-co">${esc(h.company || '—')}</div>
-          <div class="h-sub">
-            ${h.ticker ? `<button type="button" class="tk" data-tk="${esc(h.ticker)}" title="ดูว่ากองทุนไหนถือตัวนี้บ้าง">${esc(h.ticker)}</button>` : `<span class="no-tk">ไม่มี Ticker</span>`}
-            <span class="h-trk"><i style="width:${((h.pct || 0) / max * 100).toFixed(1)}%"></i></span>
-          </div>
-        </div>
-        <span class="h-val">${fmtPct(h.pct)}</span>
-      </div>`).join('') + `
-      <div class="sec-note">
-        <span>Top 10 รวม <b>${fmtPct(f.top10)}</b></span>
-        <span>Top 20 รวม <b>${fmtPct(f.top20)}</b></span>
-        <span>ทั้งหมด ${f.holdings.length} รายการ รวม <b>${fmtPct(f.total)}</b></span>
-      </div>`;
-    return;
-  }
+  if (S.seg === 'holdings') { body.innerHTML = holdingsHTML(f); return; }
+
   const items = S.seg === 'countries' ? f.countries : f.sectors;
-  const label = S.seg === 'countries' ? 'สัดส่วนประเทศ' : 'สัดส่วนอุตสาหกรรม';
-  if (!items.length) { body.innerHTML = `<div class="none">ยังไม่มีข้อมูล${label}ของกองทุนนี้</div>`; return; }
+  const label = t(S.seg === 'countries' ? 'allocC' : 'allocS');
+  if (!items.length) { body.innerHTML = `<div class="none">${t('noAlloc', label)}</div>`; return; }
+  const total = items.reduce((s, a) => s + (a.pct || 0), 0);
+  body.innerHTML = `
+    <div class="alloc-head">
+      <div class="seg sm" role="group">
+        <button type="button" data-chart="bar" class="${S.chart === 'bar' ? 'on' : ''}">${ICO_BAR}${t('bar')}</button>
+        <button type="button" data-chart="pie" class="${S.chart === 'pie' ? 'on' : ''}">${ICO_PIE}${t('pie')}</button>
+      </div>
+    </div>
+    ${S.chart === 'pie' ? pieHTML(items) : barsHTML(items)}
+    <div class="sec-note">
+      <span>${t('allocSum', label, items.length)} <b>${fmtPct(total)}</b></span>
+      ${S.chart === 'pie' && items.filter(a => a.pct > 0).length > PIE_TOP ? `<span>${t('pieNote')}</span>` : ''}
+    </div>`;
+}
+
+function holdingsHTML(f) {
+  if (!f.holdings.length) return `<div class="none">${t('noHold')}</div>`;
+  const max = Math.max(...f.holdings.map(h => h.pct || 0), 0.0001);
+  return f.holdings.map((h, i) => `
+    <div class="hrow">
+      <span class="h-rank">${i + 1}</span>
+      <div style="min-width:0">
+        <div class="h-co">${esc(h.company || '—')}</div>
+        <div class="h-sub">
+          ${h.ticker ? `<button type="button" class="tk" data-tk="${esc(h.ticker)}" title="${t('tkTitle')}">${esc(h.ticker)}</button>` : `<span class="no-tk">${t('noTk')}</span>`}
+          <span class="h-trk"><i style="width:${((h.pct || 0) / max * 100).toFixed(1)}%"></i></span>
+        </div>
+      </div>
+      <span class="h-val">${fmtPct(h.pct)}</span>
+    </div>`).join('') + `
+    <div class="sec-note">
+      <span>${t('top10Sum')} <b>${fmtPct(f.top10)}</b></span>
+      <span>${t('top20Sum')} <b>${fmtPct(f.top20)}</b></span>
+      <span>${t('allSum', f.holdings.length)} <b>${fmtPct(f.total)}</b></span>
+    </div>`;
+}
+
+function barsHTML(items) {
   const max = Math.max(...items.map(a => a.pct || 0), 0.0001);
-  const total = items.reduce((t, a) => t + (a.pct || 0), 0);
-  body.innerHTML = items.map(a => `
+  return items.map(a => `
     <div class="arow">
       <span class="a-lbl" title="${esc(a.name)}">${esc(a.name)}</span>
-      <span class="a-trk"><i style="width:${((a.pct || 0) / max * 100).toFixed(1)}%"></i></span>
+      <span class="a-trk"><i style="width:${(Math.max(a.pct || 0, 0) / max * 100).toFixed(1)}%"></i></span>
       <span class="a-val">${fmtPct(a.pct)}</span>
-    </div>`).join('') + `
-    <div class="sec-note"><span>${label} ${items.length} รายการ รวม <b>${fmtPct(total)}</b></span></div>`;
+    </div>`).join('');
+}
+
+/* donut: top 6 in fixed colour order, the rest folded into "Others",
+   and any gap up to 100% shown as an unallocated slice */
+const PIE_TOP = 6;
+function pieParts(items) {
+  const pos = items.filter(a => a.pct > 0);
+  const parts = pos.slice(0, PIE_TOP).map((a, i) => ({ name: a.name, pct: a.pct, color: `var(--c${i + 1})` }));
+  const rest = pos.slice(PIE_TOP);
+  if (rest.length) parts.push({ name: t('others', rest.length), pct: rest.reduce((s, a) => s + a.pct, 0), color: 'var(--c-other)', muted: true, title: rest.map(a => `${a.name} ${fmtPct(a.pct)}`).join('\n') });
+  const sum = parts.reduce((s, p) => s + p.pct, 0);
+  if (sum < 99.5) parts.push({ name: t('unalloc'), pct: 100 - sum, color: 'var(--c-none)', muted: true, none: true });
+  return parts;
+}
+function pieHTML(items) {
+  const parts = pieParts(items);
+  const whole = Math.max(100, parts.reduce((s, p) => s + p.pct, 0));
+  const R = 62, C = 2 * Math.PI * R, GAP = parts.length > 1 ? 2 : 0;
+  let start = 0;
+  const arcs = parts.map((p, i) => {
+    const full = p.pct / whole * C;
+    const len = Math.max(full - GAP, 0.6);
+    const arc = `<circle class="arc" data-k="${i}" cx="80" cy="80" r="${R}" fill="none" stroke="${p.color}" stroke-width="26"
+      stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-start).toFixed(2)}" transform="rotate(-90 80 80)"><title>${esc(p.name)} ${fmtPct(p.pct)}</title></circle>`;
+    start += full;
+    return arc;
+  }).join('');
+  const lead = parts[0];
+  return `
+    <div class="pie-wrap">
+      <div class="pie-box">
+        <svg viewBox="0 0 160 160" role="img" aria-label="${esc(parts.map(p => `${p.name} ${fmtPct(p.pct)}`).join(', '))}">${arcs}</svg>
+        <div class="pie-center"><div class="pie-c-n" data-lead="${esc(lead.name)}">${esc(lead.name)}</div><div class="pie-c-v" data-lead="${fmtPct(lead.pct)}">${fmtPct(lead.pct)}</div></div>
+      </div>
+      <div class="legend">
+        ${parts.map((p, i) => `
+          <div class="lg-row" data-k="${i}"${p.title ? ` title="${esc(p.title)}"` : ''}>
+            <span class="sw${p.none ? ' unal' : ''}" style="background:${p.color}"></span>
+            <span class="lg-n${p.muted ? ' muted' : ''}">${esc(p.name)}</span>
+            <span class="lg-v">${fmtPct(p.pct)}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+/* hover a slice or a legend row: highlight it and show it in the middle */
+function pieHover(e, on) {
+  const wrap = e.target.closest && e.target.closest('.pie-wrap');
+  if (!wrap) return;
+  const hit = on && e.target.closest('[data-k]');
+  const n = $('.pie-c-n', wrap), v = $('.pie-c-v', wrap);
+  $$('[data-k]', wrap).forEach(el => el.classList.toggle('on', !!hit && el.dataset.k === hit.dataset.k));
+  wrap.classList.toggle('hl', !!hit);
+  if (hit) {
+    const row = $(`.lg-row[data-k="${hit.dataset.k}"]`, wrap);
+    n.textContent = $('.lg-n', row).textContent; v.textContent = $('.lg-v', row).textContent;
+  } else { n.textContent = n.dataset.lead; v.textContent = v.dataset.lead; }
 }
 
 /* events: funds tab */
@@ -705,9 +897,13 @@ $('#fd').onclick = e => {
   if (e.target.closest('.fd-close')) return closeSheet();
   const sg = e.target.closest('[data-seg]');
   if (sg) { S.seg = sg.dataset.seg; renderSeg(); return; }
+  const ch = e.target.closest('[data-chart]');
+  if (ch) { S.chart = ch.dataset.chart; store.set('fhChart', S.chart); renderSeg(); return; }
   const tk = e.target.closest('.tk');
   if (tk) lookupTicker(tk.dataset.tk);
 };
+$('#fd').addEventListener('pointerover', e => pieHover(e, true));
+$('#fd').addEventListener('pointerout', e => { if (!e.relatedTarget || !e.relatedTarget.closest || !e.relatedTarget.closest('[data-k]')) pieHover(e, false); });
 $('#fd-backdrop').onclick = closeSheet;
 
 /* ═════════ Lookup tab ═════════ */
@@ -723,12 +919,12 @@ const POPULAR = (() => {
 })();
 
 function lookupRows() {
-  const t = terms(S.lq);
-  if (!t.length && !S.mag7) return null;
+  const q = terms(S.lq);
+  if (!q.length && !S.mag7) return null;
   const rows = [];
   FUNDS.forEach(f => f.holdings.forEach(h => {
     if (S.mag7 && !isMag7(h.ticker)) return;
-    if (t.length && !t.every(x => h.hay.includes(x))) return;
+    if (q.length && !q.every(x => h.hay.includes(x))) return;
     rows.push({ f, h });
   }));
   if (S.lsort === 'name') rows.sort((a, b) => a.f.name.localeCompare(b.f.name) || (b.h.pct ?? -1) - (a.h.pct ?? -1));
@@ -737,7 +933,7 @@ function lookupRows() {
 }
 
 const chip = (tk, co, n) =>
-  `<button type="button" class="co-chip" data-q="${esc(tk || co)}"><b>${esc(tk || '—')}</b><span class="co">${esc(co)}</span><span class="n">${n} กองทุน</span></button>`;
+  `<button type="button" class="co-chip" data-q="${esc(tk || co)}"><b>${esc(tk || '—')}</b><span class="co">${esc(co)}</span><span class="n">${t('nFunds', n)}</span></button>`;
 
 function renderLookup() {
   $('#l-q-x').hidden = !S.lq; $('#l-kbd').hidden = !!S.lq;
@@ -752,13 +948,13 @@ function renderLookup() {
     $('#l-count').textContent = '';
     $('#l-card').hidden = true;
     sum.innerHTML = `
-      <div class="lk-h">หุ้นที่ถูกถือในหลายกองทุนที่สุด <span class="hint">กดเพื่อดูว่ามีกองทุนไหนถือบ้าง</span></div>
+      <div class="lk-h">${t('popular')} <span class="hint">${t('popularHint')}</span></div>
       <div class="co-chips">${POPULAR.map(p => chip(p.ticker, p.company, p.funds.size)).join('')}</div>`;
     return;
   }
 
   const fundsHit = new Set(rows.map(r => r.f.id)).size;
-  $('#l-count').textContent = `${rows.length.toLocaleString()} รายการ · ${fundsHit} กองทุน`;
+  $('#l-count').textContent = t('lCount', rows.length.toLocaleString(), fundsHit);
 
   // which companies matched?
   const g = new Map();
@@ -769,21 +965,20 @@ function renderLookup() {
   });
   const groups = [...g.values()].sort((a, b) => b.funds.size - a.funds.size);
   if (!rows.length) {
-    sum.innerHTML = `<div class="state-msg" style="padding:18px">ไม่พบหุ้น / บริษัทที่ตรงกับ “${esc(S.lq)}”${S.mag7 ? ' ในกลุ่ม MAG7' : ''}</div>`;
+    sum.innerHTML = `<div class="state-msg" style="padding:18px">${t('lNone', esc(S.lq), S.mag7)}</div>`;
   } else if (groups.length === 1) {
     const e = groups[0];
-    const avg = e.pcts.length ? e.pcts.reduce((t, v) => t + v, 0) / e.pcts.length : null;
-    const top = rows[0];
+    const avg = e.pcts.length ? e.pcts.reduce((s, v) => s + v, 0) / e.pcts.length : null;
     sum.innerHTML = `
       <div class="one">
         <div style="min-width:0"><div class="one-name">${esc(e.company || e.ticker)}</div><div class="one-tk">${esc(e.ticker || '')}</div></div>
-        <div class="one-stat"><b>${e.funds.size}</b>กองทุนที่ถือ</div>
-        <div class="one-stat"><b>${fmtPct(avg)}</b>สัดส่วนเฉลี่ย</div>
-        <div class="one-stat"><b>${fmtPct(Math.max(...e.pcts))}</b>สูงสุด${S.lsort === 'pct' ? ' · ' + esc(top.f.name) : ''}</div>
+        <div class="one-stat"><b>${e.funds.size}</b>${t('heldBy')}</div>
+        <div class="one-stat"><b>${fmtPct(avg)}</b>${t('avgW')}</div>
+        <div class="one-stat"><b>${e.pcts.length ? fmtPct(Math.max(...e.pcts)) : '—'}</b>${t('maxW')}${S.lsort === 'pct' ? ' · ' + esc(rows[0].f.name) : ''}</div>
       </div>`;
   } else {
     sum.innerHTML = `
-      <div class="lk-h">${S.mag7 ? 'MAG7' : 'หุ้น / บริษัทที่ตรงกับคำค้น'} <span class="hint">${groups.length} ตัว · กดเพื่อดูเฉพาะตัวนั้น</span></div>
+      <div class="lk-h">${S.mag7 ? 'MAG7' : t('matched')} <span class="hint">${t('matchedHint', groups.length)}</span></div>
       <div class="co-chips">${groups.slice(0, 16).map(e => chip(e.ticker, e.company, e.funds.size)).join('')}</div>`;
   }
 
@@ -792,18 +987,18 @@ function renderLookup() {
   $('#l-card').hidden = !rows.length;
   $('#l-rows').innerHTML = shown.map(({ f, h }) => `
     <tr data-id="${f.id}">
-      <td class="c-fund" data-label="กองทุน">
+      <td class="c-fund" data-label="${t('thFund')}">
         <div class="f-code"><span class="c">${esc(f.name)}</span>${f.mnemonic ? `<span class="mn">${esc(f.mnemonic)}</span>` : ''}</div>
         <div class="f-sub">${esc(f.underlying || f.classification)}</div>
       </td>
       <td class="td-tk" data-label="Ticker">${esc(h.ticker || '—')}</td>
-      <td class="td-co" data-label="บริษัท" title="${esc(h.company)}">${esc(h.company)}</td>
-      <td class="num td-pct" data-label="สัดส่วน (%)">${fmtPct(h.pct)}</td>
-      <td class="td-date" data-label="ข้อมูล ณ">${fmtDate(f.date)}</td>
+      <td class="td-co" data-label="${t('thCo')}" title="${esc(h.company)}">${esc(h.company)}</td>
+      <td class="num td-pct" data-label="${t('thPct')}">${fmtPct(h.pct)}</td>
+      <td class="td-date" data-label="${t('asOf')}">${fmtDate(f.date)}</td>
     </tr>`).join('');
   const left = limited.length - shown.length;
   $('#l-more').hidden = left <= 0;
-  $('#l-more').innerHTML = left > 0 ? `<button type="button" class="ghost-btn" id="l-more-btn">แสดงเพิ่ม (เหลืออีก ${left.toLocaleString()} รายการ)</button>` : '';
+  $('#l-more').innerHTML = left > 0 ? `<button type="button" class="ghost-btn" id="l-more-btn">${t('more', left.toLocaleString())}</button>` : '';
 }
 
 function lookupTicker(q) {
@@ -812,9 +1007,9 @@ function lookupTicker(q) {
   switchTab('lookup'); renderLookup(); updateOffset(); window.scrollTo(0, 0);
 }
 function openFundFromLookup(id) {
-  const f = FUNDS[id]; if (!f) return;
+  if (!FUNDS[id]) return;
   switchTab('funds');
-  if (!S.list.some(x => x.id === id)) { $('#f-reset').click(); }   // make sure it is in the list
+  if (!S.list.some(x => x.id === id)) $('#f-reset').click();   // make sure it is in the list
   selectFund(id, { scroll: true });
 }
 
@@ -854,6 +1049,7 @@ addEventListener('keydown', e => {
 });
 
 /* ── start ── */
+applyStatic();
 buildFundFilters();
 renderFundList();
 renderDetail();
